@@ -1,1 +1,0 @@
-# camping_website
