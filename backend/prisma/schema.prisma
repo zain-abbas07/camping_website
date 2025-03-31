@@ -13,6 +13,7 @@ model User {
   email    String @unique
   password String
   bookings Booking[]
+  reviews  Review[]
 }
 
 model Campsite {
