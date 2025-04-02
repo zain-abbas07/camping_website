@@ -5,6 +5,12 @@
   "scripts": {
     "start": "node index.js"
   },
+  
+"prisma": {
+  "seed": "node prisma/seed.js"
+}
+
+,
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -16,5 +22,8 @@
     "express": "^4.21.2",
     "mysql2": "^3.14.0",
     "prisma": "^6.5.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }
