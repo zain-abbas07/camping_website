@@ -4,12 +4,31 @@ import axios from 'axios';
 
 const bookings = ref([]);
 
-onMounted(async () => {
-  const userId = localStorage.getItem("userId");
-  if (!userId) return alert("Not logged in");
+// onMounted(async () => {
+//   const userId = localStorage.getItem("userId");
+//   if (!userId) return alert("Not logged in");
 
-  const res = await axios.get(`http://localhost:3000/bookings?userId=${userId}`);
-  bookings.value = res.data;
+//   const res = await axios.get(`http://localhost:3000/bookings?userId=${userId}`);
+//   bookings.value = res.data;
+// });
+
+onMounted(async () => {
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      alert("You must be logged in to view your bookings.");
+      return router.push("/login");
+    }
+
+    const user = JSON.parse(storedUser);
+    const userId = user.id;
+
+    const res = await axios.get(`http://localhost:3000/bookings?userId=${userId}`);
+    bookings.value = res.data;
+  } catch (error) {
+    console.error("Failed to load bookings:", error);
+    alert("There was a problem loading your bookings.");
+  }
 });
 </script>
 
