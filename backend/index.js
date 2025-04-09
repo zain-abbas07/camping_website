@@ -18,6 +18,14 @@ app.get("/campsites", async (req, res) => {
   const campsites = await prisma.campsite.findMany();
   res.json(campsites);
 });
+// Fetch a single campsite by ID
+app.get("/campsites/:id", async (req, res) => {
+  const { id } = req.params;
+  const campsite = await prisma.campsite.findUnique({
+    where: { id: parseInt(id) },
+  });
+  res.json(campsite);
+});
 
 // User signup
 const bcrypt = require('bcrypt');

@@ -25,26 +25,90 @@ const logout = () => {
   }
 };
 
+const viewDetails = (id) => {
+  router.push(`/campsite/${id}`);
+};
+
 </script>
 
 <template>
-  <div>
-    <h1>Available Campsites</h1>
+  <div class="container">
+    <h1>🏕️ Available Campsites</h1>
 
-    <div v-if="user">
-      <p>Welcome, {{ user.name }} 👋</p>
-      <button @click="logout">Logout</button>
-    </div>
-    <div v-else>
-      <p>You are not logged in.</p>
-      <router-link to="/login">Login</router-link> |
-      <router-link to="/signup">Sign Up</router-link>
+    <div class="auth">
+      <template v-if="user">
+        <p>Welcome, {{ user.name }} 👋</p>
+        <button @click="logout">Logout</button>
+      </template>
+      <template v-else>
+        <p>You are not logged in.</p>
+        <router-link to="/login">Login</router-link> |
+        <router-link to="/signup">Sign Up</router-link>
+      </template>
     </div>
 
-    <div v-for="site in campsites" :key="site.id" @click="router.push(`/campsite/${site.id}`)">
-      <h3>{{ site.name }}</h3>
-      <p>{{ site.location }}</p>
-      <p>${{ site.price }}/night</p>
+    <div class="cards">
+      <div
+        v-for="site in campsites"
+        :key="site.id"
+        class="card"
+        @click="viewDetails(site.id)"
+      >
+        <img
+          src="https://source.unsplash.com/400x200/?camping,forest,{{ site.name }}"
+          alt="Campsite Image"
+        />
+        <div class="card-content">
+          <h3>{{ site.name }}</h3>
+          <p>{{ site.location }}</p>
+          <p><strong>${{ site.price }}</strong>/night</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.auth {
+  margin-bottom: 1.5rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.card-content {
+  padding: 1rem;
+}
+</style>
