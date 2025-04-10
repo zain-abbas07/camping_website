@@ -2,10 +2,12 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const email = ref('');
 const password = ref('');
 const router = useRouter();
+const auth = useAuthStore();
 
 const handleLogin = async () => {
   try {
@@ -13,8 +15,9 @@ const handleLogin = async () => {
       email: email.value,
       password: password.value
     });
-    localStorage.setItem('user', JSON.stringify(res.data));
+    loginUser(res.data);
     alert('Login successful!');
+    // location.reload();
     router.push('/');
   } catch (err) {
     alert('Login failed: ' + err.response.data.error);

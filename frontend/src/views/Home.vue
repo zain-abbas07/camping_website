@@ -38,7 +38,7 @@ const viewDetails = (id) => {
     <div class="auth">
       <template v-if="user">
         <p>Welcome, {{ user.name }} 👋</p>
-        <button @click="logout">Logout</button>
+        
       </template>
       <template v-else>
         <p>You are not logged in.</p>
