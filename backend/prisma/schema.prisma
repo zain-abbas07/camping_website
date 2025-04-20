@@ -7,36 +7,105 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  OWNER
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   name     String
+  username String @unique
   email    String @unique
   password String
+  role     Role   @default(USER)
   bookings Booking[]
   reviews  Review[]
+  phoneNumber String? @unique
+  spots    Campsite[] @relation("OwnerSpots")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isVerified   Boolean @default(false)
+  status       String  @default("active")
+  passwordResetTokens PasswordResetToken[]
 }
 
+
 model Campsite {
-  id          Int    @id @default(autoincrement())
-  name        String
-  location    String
-  description String
-  price       Float
-  reviews     Review[]
-  bookings    Booking[]
+  id           Int          @id @default(autoincrement())
+  name         String
+  description  String
+  price        Float
+  owner        User?        @relation("OwnerSpots", fields: [ownerId], references: [id])
+  ownerId      Int?
+  availability Availability[]
+  reviews      Review[]
+  bookings     Booking[]
+  createdAt    DateTime     @default(now())
+  amenities Amenity[]
+  images    Image[]
+  location   Location? @relation(fields: [locationId], references: [id])
+  locationId Int?     @unique
+
+}
+model Location {
+  id        Int       @id @default(autoincrement())
+  country   String
+  state     String?
+  city      String
+  address   String?
+  campsite  Campsite?
+}
+
+model Amenity {
+  id         Int       @id @default(autoincrement())
+  name       String
+  campsiteId Int
+  campsite   Campsite  @relation(fields: [campsiteId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+model Image {
+  id         Int       @id @default(autoincrement())
+  url        String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  campsiteId Int
+  campsite   Campsite  @relation(fields: [campsiteId], references: [id])
+}
+
+
+model Availability {
+  id        Int       @id @default(autoincrement())
+  spot      Campsite  @relation(fields: [spotId], references: [id])
+  spotId    Int
+  date      DateTime
+  available Boolean   @default(true)
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
 }
 
 model Booking {
-  id        Int      @id @default(autoincrement())
-  userId    Int
+  id         Int           @id @default(autoincrement())
+  userId     Int
   campsiteId Int
-  checkIn   DateTime
-  checkOut  DateTime
+  checkIn    DateTime
+  checkOut   DateTime
   totalPrice Float
-
-  user      User     @relation(fields: [userId], references: [id])
-  campsite  Campsite @relation(fields: [campsiteId], references: [id])
+  status     BookingStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user       User          @relation(fields: [userId], references: [id])
+  campsite   Campsite      @relation(fields: [campsiteId], references: [id])
 }
+
+
 
 model Review {
   id        Int      @id @default(autoincrement())
@@ -44,7 +113,19 @@ model Review {
   campsiteId Int
   rating    Int
   comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user      User     @relation(fields: [userId], references: [id])
   campsite  Campsite @relation(fields: [campsiteId], references: [id])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
 }

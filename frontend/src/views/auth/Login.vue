@@ -3,33 +3,35 @@ import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
-const name = ref('');
 const email = ref('');
 const password = ref('');
 const router = useRouter();
 
-const handleSignup = async () => {
+const handleLogin = async () => {
   try {
-    const res = await axios.post('http://localhost:3000/signup', {
-      name: name.value,
+    const res = await axios.post('http://localhost:3000/login', {
       email: email.value,
       password: password.value
     });
-    alert('Signup successful!');
+
     localStorage.setItem('user', JSON.stringify(res.data));
+    alert('Login successful!');
     router.push('/');
   } catch (err) {
-    alert('Signup failed: ' + err.response.data.error);
+      if (err.response?.data?.error) {
+        alert(err.response.data.error);
+      } else {
+        alert("Something went wrong. Please try again.");
+      }
   }
 };
 </script>
 
 <template>
-  <h2>Signup</h2>
-  <form @submit.prevent="handleSignup">
-    <input v-model="name" placeholder="Name" required />
+  <h2>Login</h2>
+  <form @submit.prevent="handleLogin">
     <input v-model="email" type="email" placeholder="Email" required />
     <input v-model="password" type="password" placeholder="Password" required />
-    <button type="submit">Sign Up</button>
+    <button type="submit">Login</button>
   </form>
 </template>

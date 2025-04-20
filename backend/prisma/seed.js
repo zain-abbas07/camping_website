@@ -1,36 +1,40 @@
-const { PrismaClient } = require("@prisma/client");
-
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-  await prisma.user.createMany({
-    data: [
-      { name: "Lucas Dupont", email: "lucas.dupont@example.com", password: "hashed_password_1" },
-      { name: "Emma Verhoeven", email: "emma.verhoeven@example.com", password: "hashed_password_2" },
-      { name: "Noah Peeters", email: "noah.peeters@example.com", password: "hashed_password_3" },
-      { name: "Léa Fontaine", email: "lea.fontaine@example.com", password: "hashed_password_4" },
-      { name: "Arthur Janssens", email: "arthur.janssens@example.com", password: "hashed_password_5" },
-    ],
-  });
+const realImages = [
+  'https://www.istockphoto.com/photo/family-vacation-travel-rv-holiday-trip-in-motorhome-caravan-car-vacation-gm1656804429-534609023?utm_campaign=srp_photos_top&utm_content=https%3A%2F%2Funsplash.com%2Fs%2Fphotos%2Fcamping&utm_medium=affiliate&utm_source=unsplash&utm_term=camping%3A%3A%3A',
+  'https://unsplash.com/photos/orange-camping-tent-near-green-trees-y8Ngwq34_Ak'  ,
+  'https://unsplash.com/photos/person-sitting-near-bonfire-surrounded-by-trees-1azAjl8FTnU'
+];
 
-  await prisma.campsite.createMany({
-    data: [
-      { name: "Ardennes Forest Camp", location: "Ardennes, Belgium", description: "A peaceful camping spot.", price: 45.00 },
-      { name: "Lake Eupen Retreat", location: "Eupen, Belgium", description: "Lakeside retreat for relaxation.", price: 60.00 },
-      { name: "Camp Hoge Kempen", location: "Hoge Kempen, Belgium", description: "Great hiking trails.", price: 55.00 },
-      { name: "Dunes Camping", location: "De Panne, Belgium", description: "Coastal campsite with beach access.", price: 70.00 },
-      { name: "Flemish Countryside Getaway", location: "Bruges, Belgium", description: "Camping near Bruges.", price: 50.00 },
-    ],
-  });
-
-  console.log("✅ Seeding completed!");
+function getRandomImages(count = 2) {
+  return realImages
+    .sort(() => 0.5 - Math.random())
+    .slice(0, count)
+    .map(url => ({ url }));
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
+async function addImagesToCampsites() {
+  try {
+    const campsites = await prisma.campsite.findMany();
+
+    for (const campsite of campsites) {
+      const imagesToAdd = getRandomImages(2);
+      await prisma.image.createMany({
+        data: imagesToAdd.map(img => ({
+          url: img.url,
+          campsiteId: campsite.id,
+        })),
+      });
+      console.log(`🖼️ Added images to: ${campsite.name}`);
+    }
+
+    console.log('✅ Images added to all campsites!');
+  } catch (err) {
+    console.error('❌ Error adding images:', err);
+  } finally {
     await prisma.$disconnect();
-  });
+  }
+}
+
+addImagesToCampsites();

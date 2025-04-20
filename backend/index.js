@@ -2,16 +2,22 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
-
+const rateLimit = require("express-rate-limit");
 const app = express();
 const prisma = new PrismaClient();
+const helmet = require("helmet");
+const bcrypt = require('bcrypt');
 
 app.use(cors());
 app.use(express.json());
+app.use(helmet());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
 app.get("/", (req, res) => {
   res.send("Welcome to the Camping Booking API!");
 });
+
+// ========== CAMPSITES ==========
 
 // Fetch all campsites
 app.get("/campsites", async (req, res) => {
@@ -33,11 +39,12 @@ app.get("/campsites/:id", async (req, res) => {
   res.json(campsite);
 });
 
+// ========== AUTH ==========
+
 // User signup
-const bcrypt = require('bcrypt');
 
 app.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email,username, password, phoneNumber, role } = req.body;
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,19 +54,34 @@ app.post("/signup", async (req, res) => {
       data: {
         name,
         email,
-        password: hashedPassword
-      }
+        username,
+        password: hashedPassword,
+        phoneNumber,
+        role: role || "USER"
+      },
     });
-    res.json(user);
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: "Email already in use" });
+
+     // Remove password from response
+     const { password: _, ...userWithoutPassword } = user;
+     res.json({ success: true, user: userWithoutPassword });
+ 
+} catch (err) {
+  console.error("Signup error:", err);
+
+  if (err.code === 'P2002') {
+    const field = err.meta?.target?.join(', ') || 'field';
+    return res.status(400).json({ success: false, error: `${field} already in use` });
   }
+
+  res.status(500).json({ success: false, error: "Internal server error", message: err.message });
+}
 });
+
+
 // User login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-
+  
   const user = await prisma.user.findUnique({
     where: { email }
   });
@@ -68,17 +90,19 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid email or password" });
   }
 
-  const passwordMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, user.password);
 
-  if (!passwordMatch) {
-    return res.status(401).json({ error: "Invalid email or password" });
+  if (!isMatch) {
+    return res.status(401).json({ success: false, error: "Invalid email or password" });
   }
-  
-  // Remove password before sending
-  const { password: _, ...userWithoutPassword } = user;
 
-  res.json(userWithoutPassword);
+  const { password: _, ...userWithoutPassword } = user;
+  res.json({ success: true, user: userWithoutPassword });
 });
+
+// ========== BOOKINGS ==========
+
+
 //get bookings by user id
 app.get("/bookings", async (req, res) => {
   const { userId } = req.query;
@@ -91,27 +115,53 @@ app.get("/bookings", async (req, res) => {
 // Create a booking
 app.post("/bookings", async (req, res) => {
   const { userId, campsiteId, checkIn, checkOut, totalPrice } = req.body;
-  const booking = await prisma.booking.create({
-    data: {
-      userId: parseInt(userId),
-      campsiteId: parseInt(campsiteId),
-      checkIn: new Date(checkIn),
-      checkOut: new Date(checkOut),
-      totalPrice: parseFloat(totalPrice),
-    },
-  });
-  res.json(booking);
+
+  if (new Date(checkIn) >= new Date(checkOut)) {
+    return res.status(400).json({ success: false, error: "Check-in must be before check-out" });
+  }
+
+  try {
+    const booking = await prisma.booking.create({
+      data: {
+        userId: parseInt(userId),
+        campsiteId: parseInt(campsiteId),
+        checkIn: new Date(checkIn),
+        checkOut: new Date(checkOut),
+        totalPrice: parseFloat(totalPrice),
+      },
+    });
+
+    res.json({ success: true, booking });
+
+  } catch (err) {
+    console.error("Booking error:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
 });
+
+// ========== ACCOUNT ==========
+
 // See Account details
 app.get("/users/:id", async (req, res) => {
   const { id } = req.params;
+
   const user = await prisma.user.findUnique({
     where: { id: parseInt(id) },
-    select: { id: true, name: true, email: true }
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      username: true,
+    },
   });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json(user);
+
+  if (!user) {
+    return res.status(404).json({ success: false, error: "User not found" });
+  }
+
+  res.json({ success: true, user });
 });
+
 // Update Name/Email
 app.put("/users/:id", async (req, res) => {
   const { id } = req.params;
@@ -120,38 +170,49 @@ app.put("/users/:id", async (req, res) => {
   try {
     const updated = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { name, email }
+      data: { name, email },
     });
+
     res.json({ success: true, user: updated });
+
   } catch (err) {
     console.error(err);
-    res.status(400).json({ error: "Could not update profile" });
+    res.status(400).json({ success: false, error: "Could not update profile" });
   }
 });
-// change password
-const bcrypt = require('bcrypt')
 
+// change password
+
+// Change password
 app.put("/users/:id/password", async (req, res) => {
   const { id } = req.params;
   const { current, new: newPassword } = req.body;
 
-  const user = await prisma.user.findUnique({ where: { id: parseInt(id) } });
+  const user = await prisma.user.findUnique({
+    where: { id: parseInt(id) },
+  });
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user) {
+    return res.status(404).json({ success: false, error: "User not found" });
+  }
 
   const valid = await bcrypt.compare(current, user.password);
-  if (!valid) return res.status(401).json({ error: "Incorrect current password" });
+  if (!valid) {
+    return res.status(401).json({ success: false, error: "Incorrect current password" });
+  }
 
   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
   await prisma.user.update({
     where: { id: parseInt(id) },
-    data: { password: hashedNewPassword }
+    data: { password: hashedNewPassword },
   });
 
   res.json({ success: true });
 });
 
+module.exports = app;
 
 // Start server
-app.listen(3000, () => console.log("Server running on port 3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

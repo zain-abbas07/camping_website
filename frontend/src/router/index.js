@@ -1,11 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue';
-import Signup from '../views/signup.vue'
-import Login from '../views/Login.vue';
-import Campsite from '../views/Campsite.vue';
-import Bookings from '../views/Bookings.vue';
+import Signup from '../views/auth/signup.vue'
+import Login from '../views/auth/Login.vue';
+import Campsite from '../views/campsites/Campsite.vue';
+import Bookings from '../views/user/Bookings.vue';
 import CreateBooking from '../views/CreateBooking.vue' 
-import Account from '@/views/Account.vue';
+import Account from '@/views/user/Account.vue';
+// import { useAuthStore } from '@/stores/auth';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,10 +25,6 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login,
-    },
-    { path: '/account',
-      name: 'Account', 
-      component: Account 
     },
     {
       path: '/campsite/:id',
@@ -50,11 +47,21 @@ const router = createRouter({
   { 
     path: '/account',
     name: 'Account',
-    component: () => import('@/views/Account.vue'),
+    component: () => import('@/views/user/Account.vue'),
     meta: { requiresAuth: true }
   },
 
   ],
 })
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('user');
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login');
+  } else {
+    next();
+  }
+});
 
 export default router
