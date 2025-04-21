@@ -19,11 +19,56 @@ app.get("/", (req, res) => {
 
 // ========== CAMPSITES ==========
 
+// Create a campsite
+app.post('/campsites', upload.array('images'), async (req, res) => {
+  const { ownerId, name, description, price, location, amenities, availability } = req.body;
+  const images = req.files.map((file) => file.path);
+
+  try {
+    const campsite = await prisma.campsite.create({
+      data: {
+        ownerId: parseInt(ownerId),
+        name,
+        description,
+        price: parseFloat(price),
+        location: JSON.parse(location),
+        amenities: {
+          create: JSON.parse(amenities).map((name) => ({ name })),
+        },
+        availability: {
+          create: JSON.parse(availability).map((slot) => ({
+            date: new Date(slot.date),
+            available: slot.available,
+          })),
+        },
+        images: {
+          create: images.map((url) => ({ url })),
+        },
+      },
+    });
+    res.json({ success: true, campsite });
+  } catch (err) {
+    console.error('Error creating campsite:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Fetch all campsites
 app.get("/campsites", async (req, res) => {
-  const campsites = await prisma.campsite.findMany();
-  res.json(campsites);
+  const { ownerId } = req.query;
+
+  try {
+    const campsites = await prisma.campsite.findMany({
+      where: ownerId ? { ownerId: parseInt(ownerId) } : {}, // Filter by ownerId if provided
+    });
+    res.json(campsites);
+  } catch (err) {
+    console.error("Error fetching campsites:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
+
 // Fetch a single campsite by ID
 app.get("/campsites/:id", async (req, res) => {
   const { id } = req.params;
@@ -112,6 +157,51 @@ app.get("/bookings", async (req, res) => {
   });
   res.json(bookings);
 });
+
+// Get bookings for an owner's campsites
+app.get("/owner/bookings", async (req, res) => {
+  const { ownerId } = req.query;
+
+  if (!ownerId) {
+    return res.status(400).json({ error: "Missing ownerId" });
+  }
+
+  try {
+    // Get all campsite IDs owned by this owner
+    const campsites = await prisma.campsite.findMany({
+      where: {
+        ownerId: parseInt(ownerId),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (campsites.length === 0) {
+      return res.json([]); // No campsites found for this owner
+    }
+
+    const campsiteIds = campsites.map(c => c.id);
+
+    // Get bookings for those campsites
+    const bookings = await prisma.booking.findMany({
+      where: {
+        campsiteId: { in: campsiteIds },
+      },
+      include: {
+        campsite: true,
+        user: true, // optional: to show who booked
+      },
+    });
+
+    res.json(bookings);
+  } catch (err) {
+    console.error("Error fetching owner bookings:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 // Create a booking
 app.post("/bookings", async (req, res) => {
   const { userId, campsiteId, checkIn, checkOut, totalPrice } = req.body;

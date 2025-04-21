@@ -6,6 +6,8 @@ import Campsite from '../views/campsites/Campsite.vue';
 import Bookings from '../views/user/Bookings.vue';
 import CreateBooking from '../views/CreateBooking.vue' 
 import Account from '@/views/user/Account.vue';
+import Dashboard from '@/views/owner/Dashboard.vue';
+import AddListing from '@/views/owner/AddListing.vue';
 // import { useAuthStore } from '@/stores/auth';
 
 const router = createRouter({
@@ -50,18 +52,39 @@ const router = createRouter({
     component: () => import('@/views/user/Account.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/owner/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/views/owner/Dashboard.vue'),
+    meta: { requiresAuth: true, ownerOnly: true }
+  },
+  {
+    path: '/owner/add-listing',
+    name: 'AddListing',
+    component: AddListing,
+    meta: { requiresAuth: true, ownerOnly: true },
+  },
 
   ],
 })
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem('user');
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isAuthenticated = !!user;
+
+  console.log("Navigating to:", to.fullPath);
+  console.log("User:", user);
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else {
-    next();
+   return next('/login');
+  } 
+  if (to.meta.ownerOnly && user?.role.toLowerCase() !== 'owner') {
+    console.warn('Blocked: not an owner');
+    return next('/'); 
   }
+  
+    next();
+  
 });
 
 export default router
