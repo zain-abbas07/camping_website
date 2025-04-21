@@ -2,10 +2,12 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const email = ref('');
 const password = ref('');
 const router = useRouter();
+const auth = useAuthStore();
 const loading = ref(false)
 
 const handleLogin = async () => {
@@ -16,9 +18,7 @@ const handleLogin = async () => {
       password: password.value
     });
     const user = res.data?.user;
-    // user.role = user.role.toLowerCase();
-    console.log("Logged in user:", user);
-    localStorage.setItem('user', JSON.stringify(user));
+    auth.loginUser(user);
     alert('Login successful!');
     if (user.role.toLowerCase() === 'owner') {
       router.push('/owner/dashboard')

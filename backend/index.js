@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
 
 // Create a campsite
 app.post('/campsites', upload.array('images'), async (req, res) => {
-  const { ownerId, name, description, price, location, amenities, availability } = req.body;
+  const { ownerId, name, description, price, location, amenities } = req.body;
   const images = req.files.map((file) => file.path);
 
   try {
@@ -34,12 +34,6 @@ app.post('/campsites', upload.array('images'), async (req, res) => {
         location: JSON.parse(location),
         amenities: {
           create: JSON.parse(amenities).map((name) => ({ name })),
-        },
-        availability: {
-          create: JSON.parse(availability).map((slot) => ({
-            date: new Date(slot.date),
-            available: slot.available,
-          })),
         },
         images: {
           create: images.map((url) => ({ url })),

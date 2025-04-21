@@ -72,14 +72,13 @@ router.beforeEach((to, from, next) => {
   const user = JSON.parse(localStorage.getItem('user'));
   const isAuthenticated = !!user;
 
-  console.log("Navigating to:", to.fullPath);
-  console.log("User:", user);
+
 
   if (to.meta.requiresAuth && !isAuthenticated) {
    return next('/login');
   } 
   if (to.meta.ownerOnly && user?.role.toLowerCase() !== 'owner') {
-    console.warn('Blocked: not an owner');
+    
     return next('/'); 
   }
   

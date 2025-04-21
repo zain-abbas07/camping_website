@@ -27,20 +27,31 @@ const form = ref({
 });
 
 const loading = ref(false);
-const availableAmenities = ref(['WiFi', 'Parking', 'Swimming Pool', 'BBQ', 'Pet Friendly']);
+const availableAmenities = ref([
+  'Fire Pit',
+  'Water Access',
+  'Electricity',
+  'Showers',
+  'WiFi',
+  'Parking',
+  'Swimming Pool',
+  'BBQ',
+  'Pet Friendly',
+]);
 const selectedAmenities = ref([]);
+const customAmenities = ref([{ id: Date.now(), name: '' }]);
 
 const handleFileChange = (event) => {
   const files = event.target.files;
   form.value.images = Array.from(files);
 };
 
-const addAvailability = () => {
-  form.value.availability.push({ date: '', available: true });
+const addCustomAmenity = () => {
+  customAmenities.value.push({ id: Date.now(), name: '' });
 };
 
-const removeAvailability = (index) => {
-  form.value.availability.splice(index, 1);
+const removeCustomAmenity = (id) => {
+  customAmenities.value = customAmenities.value.filter((amenity) => amenity.id !== id);
 };
 
 const submitListing = async () => {
@@ -54,7 +65,13 @@ const submitListing = async () => {
   formData.append('description', form.value.description);
   formData.append('price', form.value.price);
   formData.append('location', JSON.stringify(form.value.location));
-  formData.append('amenities', JSON.stringify(selectedAmenities.value));
+  formData.append(
+    'amenities',
+    JSON.stringify([
+      ...selectedAmenities.value,
+      ...customAmenities.value.map((amenity) => amenity.name).filter((name) => name.trim() !== ''),
+    ])
+  );
   formData.append('availability', JSON.stringify(form.value.availability));
 
   form.value.images.forEach((image, index) => {
@@ -128,8 +145,8 @@ const submitListing = async () => {
       <!-- Amenities -->
       <div>
         <label>Amenities</label>
-        <div>
-          <label v-for="amenity in availableAmenities" :key="amenity">
+        <div class="amenities-grid">
+          <label v-for="amenity in availableAmenities" :key="amenity" class="amenity-item">
             <input
               type="checkbox"
               :value="amenity"
@@ -138,25 +155,20 @@ const submitListing = async () => {
             {{ amenity }}
           </label>
         </div>
-      </div>
-
-      <!-- Availability -->
-      <div>
-        <label>Availability</label>
-        <div v-for="(slot, index) in form.availability" :key="index" class="availability-slot">
-          <input
-            type="date"
-            v-model="slot.date"
-            placeholder="Select date"
-            required
-          />
-          <select v-model="slot.available">
-            <option :value="true">Available</option>
-            <option :value="false">Not Available</option>
-          </select>
-          <button type="button" @click="removeAvailability(index)">Remove</button>
+        <div>
+          <h3>Custom Amenities</h3>
+          <ul>
+            <li v-for="(amenity, index) in customAmenities" :key="amenity.id">
+              <input
+                v-model="amenity.name"
+                type="text"
+                placeholder="Enter custom amenity"
+              />
+              <button type="button" @click="removeCustomAmenity(amenity.id)">Remove</button>
+            </li>
+          </ul>
+          <button type="button" @click="addCustomAmenity">Add Custom Amenity</button>
         </div>
-        <button type="button" @click="addAvailability">Add Availability</button>
       </div>
 
       <!-- Images -->
@@ -220,9 +232,15 @@ button:hover:not(:disabled) {
   background-color: #1b5e20;
 }
 
-.availability-slot {
+.amenities-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.amenity-item {
   display: flex;
-  gap: 1rem;
   align-items: center;
+  gap: 0.5rem;
 }
 </style>
