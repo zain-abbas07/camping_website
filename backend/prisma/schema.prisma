@@ -7,125 +7,135 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  OWNER
-}
-
-model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  username String @unique
-  email    String @unique
-  password String
-  role     Role   @default(USER)
-  bookings Booking[]
-  reviews  Review[]
-  phoneNumber String? @unique
-  spots    Campsite[] @relation("OwnerSpots")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isVerified   Boolean @default(false)
-  status       String  @default("active")
-  passwordResetTokens PasswordResetToken[]
-}
-
-
-model Campsite {
-  id           Int          @id @default(autoincrement())
-  name         String
-  description  String
-  price        Float
-  owner        User?        @relation("OwnerSpots", fields: [ownerId], references: [id])
-  ownerId      Int?
-  availability Availability[]
-  reviews      Review[]
-  bookings     Booking[]
-  createdAt    DateTime     @default(now())
-  amenities Amenity[]
-  images    Image[]
-  location   Location? @relation(fields: [locationId], references: [id])
-  locationId Int?     @unique
-
-}
-model Location {
-  id        Int       @id @default(autoincrement())
-  country   String
-  state     String?
-  city      String
-  address   String?
-  campsite  Campsite?
-}
-
-model Amenity {
-  id         Int       @id @default(autoincrement())
+model amenity {
+  id         Int      @id @default(autoincrement())
   name       String
   campsiteId Int
-  campsite   Campsite  @relation(fields: [campsiteId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  campsite   campsite @relation(fields: [campsiteId], references: [id], map: "Amenity_campsiteId_fkey")
 
+  @@index([campsiteId], map: "Amenity_campsiteId_fkey")
 }
 
-model Image {
-  id         Int       @id @default(autoincrement())
-  url        String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  campsiteId Int
-  campsite   Campsite  @relation(fields: [campsiteId], references: [id])
-}
-
-
-model Availability {
-  id        Int       @id @default(autoincrement())
-  spot      Campsite  @relation(fields: [spotId], references: [id])
+model availability {
+  id        Int      @id @default(autoincrement())
   spotId    Int
   date      DateTime
-  available Boolean   @default(true)
+  available Boolean  @default(true)
+  campsite  campsite @relation(fields: [spotId], references: [id], map: "Availability_spotId_fkey")
+
+  @@index([spotId], map: "Availability_spotId_fkey")
 }
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-}
-
-model Booking {
-  id         Int           @id @default(autoincrement())
+model booking {
+  id         Int            @id @default(autoincrement())
   userId     Int
   campsiteId Int
   checkIn    DateTime
   checkOut   DateTime
   totalPrice Float
-  status     BookingStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user       User          @relation(fields: [userId], references: [id])
-  campsite   Campsite      @relation(fields: [campsiteId], references: [id])
+  status     booking_status @default(PENDING)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime
+  campsite   campsite       @relation(fields: [campsiteId], references: [id], map: "Booking_campsiteId_fkey")
+  user       user           @relation(fields: [userId], references: [id], map: "Booking_userId_fkey")
+
+  @@index([campsiteId], map: "Booking_campsiteId_fkey")
+  @@index([userId], map: "Booking_userId_fkey")
 }
 
+model campsite {
+  id           Int            @id @default(autoincrement())
+  name         String
+  description  String
+  price        Float
+  ownerId      Int?
+  createdAt    DateTime       @default(now())
+  locationId   Int?           @unique(map: "Campsite_locationId_key")
+  amenity      amenity[]
+  availability availability[]
+  booking      booking[]
+  location     location?      @relation(fields: [locationId], references: [id], map: "Campsite_locationId_fkey")
+  owner         user?          @relation(fields: [ownerId], references: [id], map: "Campsite_ownerId_fkey")
+  image        image[]
+  review       review[]
 
+  @@index([ownerId], map: "Campsite_ownerId_fkey")
+}
 
-model Review {
-  id        Int      @id @default(autoincrement())
-  userId    Int
+model image {
+  id         Int      @id @default(autoincrement())
+  url        String   @db.Text
   campsiteId Int
-  rating    Int
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  campsite   campsite @relation(fields: [campsiteId], references: [id], map: "Image_campsiteId_fkey")
 
-  user      User     @relation(fields: [userId], references: [id])
-  campsite  Campsite @relation(fields: [campsiteId], references: [id])
+  @@index([campsiteId], map: "Image_campsiteId_fkey")
 }
 
-model PasswordResetToken {
+model location {
+  id       Int       @id @default(autoincrement())
+  country  String
+  state    String?
+  city     String
+  address  String?
+  campsite campsite?
+}
+
+model passwordresettoken {
   id        Int      @id @default(autoincrement())
-  token     String   @unique
+  token     String   @unique(map: "PasswordResetToken_token_key")
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
   createdAt DateTime @default(now())
   used      Boolean  @default(false)
+  user      user     @relation(fields: [userId], references: [id], map: "PasswordResetToken_userId_fkey")
+
+  @@index([userId], map: "PasswordResetToken_userId_fkey")
+}
+
+model review {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  campsiteId Int
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  campsite   campsite @relation(fields: [campsiteId], references: [id], map: "Review_campsiteId_fkey")
+  user       user     @relation(fields: [userId], references: [id], map: "Review_userId_fkey")
+
+  @@index([campsiteId], map: "Review_campsiteId_fkey")
+  @@index([userId], map: "Review_userId_fkey")
+}
+
+model user {
+  id                 Int                  @id @default(autoincrement())
+  name               String
+  username           String               @unique(map: "User_username_key")
+  email              String               @unique(map: "User_email_key")
+  password           String
+  role               user_role            @default(USER)
+  createdAt          DateTime             @default(now())
+  isVerified         Boolean              @default(false)
+  phoneNumber        String?              @unique(map: "User_phoneNumber_key")
+  status             String               @default("active")
+  updatedAt          DateTime
+  booking            booking[]
+  campsite           campsite[]
+  passwordresettoken passwordresettoken[]
+  review             review[]
+}
+
+enum user_role {
+  USER
+  OWNER
+}
+
+enum booking_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
 }

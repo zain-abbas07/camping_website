@@ -7,8 +7,21 @@ const app = express();
 const prisma = new PrismaClient();
 const helmet = require("helmet");
 const bcrypt = require('bcrypt');
-
-app.use(cors());
+const multer = require('multer');
+const path = require("path");
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Replace with your frontend's URL
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Add PATCH here
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Content-Disposition"],
+  })
+);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  }
+}));
 app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
@@ -17,26 +30,46 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Camping Booking API!");
 });
 
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Specify the directory where files will be stored
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`); // Generate a unique filename
+  },
+});
+
+const upload = multer({ storage });
+
+
+
+// Serve static files from the uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // ========== CAMPSITES ==========
 
 // Create a campsite
 app.post('/campsites', upload.array('images'), async (req, res) => {
   const { ownerId, name, description, price, location, amenities } = req.body;
-  const images = req.files.map((file) => file.path);
+  const images = req.files.map((file) => `uploads/${file.filename}`); // Store relative paths
 
   try {
     const campsite = await prisma.campsite.create({
       data: {
-        ownerId: parseInt(ownerId),
+        owner: {
+          connect: { id: parseInt(ownerId) },
+        },
         name,
         description,
         price: parseFloat(price),
-        location: JSON.parse(location),
+        location: {
+          create: JSON.parse(location), // Ensure `location` contains { country, state, city, address }
+        },
         amenities: {
           create: JSON.parse(amenities).map((name) => ({ name })),
         },
         images: {
-          create: images.map((url) => ({ url })),
+          create: images.map((url) => ({ url })), // Store relative paths
         },
       },
     });
@@ -49,13 +82,53 @@ app.post('/campsites', upload.array('images'), async (req, res) => {
 
 // Fetch all campsites
 app.get("/campsites", async (req, res) => {
-  const { ownerId } = req.query;
+  const { minPrice, maxPrice, location, amenities, ownerId } = req.query;
 
   try {
     const campsites = await prisma.campsite.findMany({
-      where: ownerId ? { ownerId: parseInt(ownerId) } : {}, // Filter by ownerId if provided
+      where: {
+        AND: [
+          ownerId ? { ownerId: parseInt(ownerId) } : {}, // Filter by ownerId
+          minPrice ? { price: { gte: parseFloat(minPrice) } } : {},
+          maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {},
+          location
+            ? {
+              location: {
+                is: {
+                  city: {
+                    contains: location,
+                  },
+                },
+              },
+            }
+            : {},
+          amenities
+            ? {
+              amenity: {
+                some: {
+                  name: { in: amenities.split(","), mode: "insensitive" },
+                },
+              },
+            }
+            : {},
+        ],
+      },
+      include: {
+        location: true,
+        amenity: true,
+        image: true,
+      },
     });
-    res.json(campsites);
+
+    // Transform the location object into a string (e.g., "City, Country")
+    const transformedCampsites = campsites.map((campsite) => ({
+      ...campsite,
+      location: campsite.location
+        ? `${campsite.location.city}, ${campsite.location.country}`
+        : "Unknown Location",
+    }));
+
+    res.json(transformedCampsites);
   } catch (err) {
     console.error("Error fetching campsites:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -66,24 +139,115 @@ app.get("/campsites", async (req, res) => {
 // Fetch a single campsite by ID
 app.get("/campsites/:id", async (req, res) => {
   const { id } = req.params;
-  console.log("Looking for campsite with ID:", id);
+  // console.log('Fetching campsite with ID:', id);
 
-  const campsite = await prisma.campsite.findUnique({
-    where: { id: parseInt(id) },
-  });
-  if (!campsite) {
-    console.log("Campsite not found");
-    return res.status(404).json({ error: "Campsite not found" });
+  try {
+    const campsite = await prisma.campsite.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        location: true, // Include location details
+        amenity: true, // Include amenities
+        image: true, // Include images
+      },
+    });
+    // console.log('Campsite fetched:', campsite);
+    if (!campsite) {
+      return res.status(404).json({ error: "Campsite not found" });
+    }
+
+    res.json(campsite);
+  } catch (err) {
+    console.error("Error fetching campsite:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-  res.json(campsite);
 });
 
+// Update a campsite
+app.patch("/campsites/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, location, amenities } = req.body;
+
+  try {
+    // Prepare update data
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (description) updateData.description = description;
+    if (price) updateData.price = parseFloat(price);
+
+    // Handle amenities if provided
+    if (amenities) {
+      let parsedAmenities;
+      try {
+        parsedAmenities = JSON.parse(amenities);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid amenities format. Must be a JSON array." });
+      }
+
+      if (!Array.isArray(parsedAmenities)) {
+        return res.status(400).json({ error: "Amenities must be an array." });
+      }
+
+      updateData.amenity = {
+        deleteMany: {}, // Clear existing amenities
+        create: parsedAmenities.map((name) => ({ name })), // Add new amenities
+      };
+    }
+
+    // Handle location if provided
+    if (location) {
+      let parsedLocation;
+      try {
+        parsedLocation = JSON.parse(location);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid location format. Must be a JSON object." });
+      }
+
+      if (!parsedLocation.city || !parsedLocation.country) {
+        return res.status(400).json({ error: "Invalid location data. City and country are required." });
+      }
+
+      const campsite = await prisma.campsite.findUnique({
+        where: { id: parseInt(id) },
+        select: { locationId: true },
+      });
+
+      if (campsite.locationId) {
+        // Update existing location
+        updateData.location = {
+          update: parsedLocation,
+        };
+      } else {
+        // Create a new location
+        updateData.location = {
+          create: parsedLocation,
+        };
+      }
+    }
+
+    // Update the campsite
+    const updatedCampsite = await prisma.campsite.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+      include: {
+        location: true,
+        amenity: true,
+        image: true,
+      },
+    });
+
+    res.json({ success: true, campsite: updatedCampsite });
+  } catch (err) {
+    console.error("Error updating campsite:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+});
 // ========== AUTH ==========
 
 // User signup
 
 app.post("/signup", async (req, res) => {
-  const { name, email,username, password, phoneNumber, role } = req.body;
+  const { name, email, username, password, phoneNumber, role } = req.body;
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -100,27 +264,27 @@ app.post("/signup", async (req, res) => {
       },
     });
 
-     // Remove password from response
-     const { password: _, ...userWithoutPassword } = user;
-     res.json({ success: true, user: userWithoutPassword });
- 
-} catch (err) {
-  console.error("Signup error:", err);
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ success: true, user: userWithoutPassword });
 
-  if (err.code === 'P2002') {
-    const field = err.meta?.target?.join(', ') || 'field';
-    return res.status(400).json({ success: false, error: `${field} already in use` });
+  } catch (err) {
+    console.error("Signup error:", err);
+
+    if (err.code === 'P2002') {
+      const field = err.meta?.target?.join(', ') || 'field';
+      return res.status(400).json({ success: false, error: `${field} already in use` });
+    }
+
+    res.status(500).json({ success: false, error: "Internal server error", message: err.message });
   }
-
-  res.status(500).json({ success: false, error: "Internal server error", message: err.message });
-}
 });
 
 
 // User login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  
+
   const user = await prisma.user.findUnique({
     where: { email }
   });
@@ -226,6 +390,28 @@ app.post("/bookings", async (req, res) => {
 // ========== ACCOUNT ==========
 
 // See Account details
+
+// Verify password and fetch sensitive info
+app.post('/users/:id/verify-password', async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+
+  const user = await prisma.user.findUnique({
+    where: { id: parseInt(id) },
+  });
+
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ success: false, error: 'Incorrect password' });
+  }
+
+  res.json({ success: true, phoneNumber: user.phoneNumber });
+});
+
 app.get("/users/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -246,56 +432,98 @@ app.get("/users/:id", async (req, res) => {
   res.json({ success: true, user });
 });
 
-// Update Name/Email
-app.put("/users/:id", async (req, res) => {
+
+// Update Name, Email, Phone Number, and Username
+app.put('/users/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, email } = req.body;
+  const { email, username, phoneNumber, currentValue } = req.body;
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Verify current value
+    if (email && user.email !== currentValue) {
+      return res.status(400).json({ success: false, error: 'Current email is incorrect.' });
+    }
+    if (username && user.username !== currentValue) {
+      return res.status(400).json({ success: false, error: 'Current username is incorrect.' });
+    }
+    if (phoneNumber && user.phoneNumber !== currentValue) {
+      return res.status(400).json({ success: false, error: 'Current phone number is incorrect.' });
+    }
+
+    // Update the field
     const updated = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { name, email },
+      data: { email, username, phoneNumber },
     });
 
     res.json({ success: true, user: updated });
-
   } catch (err) {
     console.error(err);
-    res.status(400).json({ success: false, error: "Could not update profile" });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// change password
-
 // Change password
-app.put("/users/:id/password", async (req, res) => {
+app.put('/users/:id/password', async (req, res) => {
   const { id } = req.params;
-  const { current, new: newPassword } = req.body;
+  const { currentPassword, newPassword } = req.body;
 
-  const user = await prisma.user.findUnique({
-    where: { id: parseInt(id) },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+    });
 
-  if (!user) {
-    return res.status(404).json({ success: false, error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, error: 'Incorrect current password' });
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password
+    await prisma.user.update({
+      where: { id: parseInt(id) },
+      data: { password: hashedNewPassword },
+    });
+
+    res.json({ success: true, message: 'Password updated successfully.' });
+  } catch (err) {
+    console.error('Error updating password:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
-
-  const valid = await bcrypt.compare(current, user.password);
-  if (!valid) {
-    return res.status(401).json({ success: false, error: "Incorrect current password" });
-  }
-
-  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-  await prisma.user.update({
-    where: { id: parseInt(id) },
-    data: { password: hashedNewPassword },
-  });
-
-  res.json({ success: true });
 });
 
 module.exports = app;
+
+// delete account
+app.delete('/users/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.user.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ success: true, message: 'Account deleted successfully.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to delete account.' });
+  }
+});
+
 
 // Start server
 const PORT = process.env.PORT || 3000;
