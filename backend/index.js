@@ -106,7 +106,7 @@ app.get("/campsites", async (req, res) => {
             ? {
               amenity: {
                 some: {
-                  name: { in: amenities.split(","), mode: "insensitive" },
+                  name: { in: amenities.split(","), }, // Filter by amenities},
                 },
               },
             }
@@ -163,69 +163,43 @@ app.get("/campsites/:id", async (req, res) => {
 });
 
 // Update a campsite
-app.patch("/campsites/:id", async (req, res) => {
+app.patch('/campsites/:id', upload.array('newImages'), async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, location, amenities } = req.body;
+  const { name, description, price, location, amenities, imagesToRemove } = req.body;
 
   try {
-    // Prepare update data
     const updateData = {};
 
     if (name) updateData.name = name;
     if (description) updateData.description = description;
     if (price) updateData.price = parseFloat(price);
 
-    // Handle amenities if provided
-    if (amenities) {
-      let parsedAmenities;
-      try {
-        parsedAmenities = JSON.parse(amenities);
-      } catch (err) {
-        return res.status(400).json({ error: "Invalid amenities format. Must be a JSON array." });
-      }
-
-      if (!Array.isArray(parsedAmenities)) {
-        return res.status(400).json({ error: "Amenities must be an array." });
-      }
-
-      updateData.amenity = {
-        deleteMany: {}, // Clear existing amenities
-        create: parsedAmenities.map((name) => ({ name })), // Add new amenities
+    if (location) {
+      updateData.location = {
+        update: JSON.parse(location),
       };
     }
 
-    // Handle location if provided
-    if (location) {
-      let parsedLocation;
-      try {
-        parsedLocation = JSON.parse(location);
-      } catch (err) {
-        return res.status(400).json({ error: "Invalid location format. Must be a JSON object." });
-      }
-
-      if (!parsedLocation.city || !parsedLocation.country) {
-        return res.status(400).json({ error: "Invalid location data. City and country are required." });
-      }
-
-      const campsite = await prisma.campsite.findUnique({
-        where: { id: parseInt(id) },
-        select: { locationId: true },
-      });
-
-      if (campsite.locationId) {
-        // Update existing location
-        updateData.location = {
-          update: parsedLocation,
-        };
-      } else {
-        // Create a new location
-        updateData.location = {
-          create: parsedLocation,
-        };
-      }
+    if (amenities) {
+      updateData.amenity = {
+        deleteMany: {},
+        create: JSON.parse(amenities).map((name) => ({ name })),
+      };
     }
 
-    // Update the campsite
+    if (imagesToRemove) {
+      const imageIds = JSON.parse(imagesToRemove);
+      await prisma.image.deleteMany({
+        where: { id: { in: imageIds } },
+      });
+    }
+
+    if (req.files.length > 0) {
+      updateData.image = {
+        create: req.files.map((file) => ({ url: `uploads/${file.filename}` })),
+      };
+    }
+
     const updatedCampsite = await prisma.campsite.update({
       where: { id: parseInt(id) },
       data: updateData,
@@ -238,8 +212,8 @@ app.patch("/campsites/:id", async (req, res) => {
 
     res.json({ success: true, campsite: updatedCampsite });
   } catch (err) {
-    console.error("Error updating campsite:", err);
-    res.status(500).json({ success: false, error: "Internal server error" });
+    console.error('Error updating campsite:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 // ========== AUTH ==========
@@ -376,6 +350,7 @@ app.post("/bookings", async (req, res) => {
         checkIn: new Date(checkIn),
         checkOut: new Date(checkOut),
         totalPrice: parseFloat(totalPrice),
+        updatedAt: new Date(),
       },
     });
 
