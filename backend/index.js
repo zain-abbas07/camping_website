@@ -9,6 +9,7 @@ const helmet = require("helmet");
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require("path");
+const axios = require('axios');
 app.use(
   cors({
     origin: "http://localhost:5173", // Replace with your frontend's URL
@@ -50,10 +51,30 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Create a campsite
 app.post('/campsites', upload.array('images'), async (req, res) => {
+  console.log('Request body:', req.body); // Log the request body
+  console.log('Uploaded files:', req.files);
   const { ownerId, name, description, price, location, amenities } = req.body;
-  const images = req.files.map((file) => `uploads/${file.filename}`); // Store relative paths
+  //const images = req.files.map((file) => `uploads/${file.filename}`); // Store relative paths
 
   try {
+    // Fetch latitude and longitude using Nominatim
+    const parsedLocation = JSON.parse(location);
+
+    const address = `${parsedLocation.city}, ${parsedLocation.state || ''}, ${parsedLocation.country}`;
+    const geocodeRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: address,
+        format: 'json',
+        limit: 1,
+      },
+    });
+
+    if (geocodeRes.data.length === 0) {
+      return res.status(400).json({ success: false, error: 'Unable to fetch coordinates for the given address.' });
+    }
+
+    const { lat, lon } = geocodeRes.data[0];
+    // Create the campsite with the fetched coordinates
     const campsite = await prisma.campsite.create({
       data: {
         owner: {
@@ -63,16 +84,21 @@ app.post('/campsites', upload.array('images'), async (req, res) => {
         description,
         price: parseFloat(price),
         location: {
-          create: JSON.parse(location), // Ensure `location` contains { country, state, city, address }
+          create: {
+            ...JSON.parse(location),
+            latitude: parseFloat(lat),
+            longitude: parseFloat(lon),
+          },
         },
-        amenities: {
+        amenity: {
           create: JSON.parse(amenities).map((name) => ({ name })),
         },
-        images: {
-          create: images.map((url) => ({ url })), // Store relative paths
+        image: {
+          create: req.files.map((file) => ({ url: `uploads/${file.filename}` })),
         },
       },
     });
+
     res.json({ success: true, campsite });
   } catch (err) {
     console.error('Error creating campsite:', err);
@@ -148,6 +174,13 @@ app.get("/campsites/:id", async (req, res) => {
         location: true, // Include location details
         amenity: true, // Include amenities
         image: true, // Include images
+        owner: { // Include owner details
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        }
       },
     });
     // console.log('Campsite fetched:', campsite);
@@ -155,10 +188,17 @@ app.get("/campsites/:id", async (req, res) => {
       return res.status(404).json({ error: "Campsite not found" });
     }
 
-    res.json(campsite);
+     // Ensure latitude and longitude are part of the location object
+     const locationWithCoordinates = {
+      ...campsite.location,
+      latitude: campsite.location?.latitude || 0, // Default to 0 if undefined
+      longitude: campsite.location?.longitude || 0, // Default to 0 if undefined
+    };
+
+    res.json({ ...campsite, location: locationWithCoordinates })
   } catch (err) {
-    console.error("Error fetching campsite:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error fetching campsite:", err)
+    res.status(500).json({ error: "Internal server error" })
   }
 });
 
@@ -362,6 +402,21 @@ app.post("/bookings", async (req, res) => {
   }
 });
 
+// Cancel a booking
+app.delete('/bookings/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.booking.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ success: true, message: 'Booking canceled successfully.' });
+  } catch (err) {
+    console.error('Error canceling booking:', err);
+    res.status(500).json({ success: false, error: 'Failed to cancel booking.' });
+  }
+});
+
 // ========== ACCOUNT ==========
 
 // See Account details
@@ -499,7 +554,57 @@ app.delete('/users/:id', async (req, res) => {
   }
 });
 
+// ========== <Messages> ==========
 
+// Fetch messages between two users
+app.get('/messages', async (req, res) => {
+  const { senderId, receiverId } = req.query;
+
+  if (!senderId || !receiverId) {
+    return res.status(400).json({ error: 'Missing senderId or receiverId' });
+  }
+
+  try {
+    const messages = await prisma.message.findMany({
+      where: {
+        OR: [
+          { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
+          { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json(messages);
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Send a message
+app.post('/messages', async (req, res) => {
+  const { senderId, receiverId, content } = req.body;
+
+  if (!senderId || !receiverId || !content) {
+    return res.status(400).json({ error: 'Missing senderId, receiverId, or content' });
+  }
+
+  try {
+    const message = await prisma.message.create({
+      data: {
+        senderId: parseInt(senderId),
+        receiverId: parseInt(receiverId),
+        content,
+      },
+    });
+
+    res.json(message);
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

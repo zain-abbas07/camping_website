@@ -33,6 +33,13 @@ onMounted(async () => {
     alert("There was a problem loading your bookings.");
   }
 });
+
+
+// Helper function to format dates
+const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'long', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString(undefined, options)
+}
 </script>
 
 <template>
@@ -41,9 +48,9 @@ onMounted(async () => {
   <div v-else>
     <div v-for="booking in bookings" :key="booking.id" class="card">
       <h3>{{ booking.campsite.name }}</h3>
-      <p>Check-in: {{ booking.checkIn }}</p>
-      <p>Check-out: {{ booking.checkOut }}</p>
-      <p>Total: ${{ booking.totalPrice }}</p>
+      <p>Check-in: {{ formatDate(booking.checkIn) }} after 5 PM</p>
+      <p>Check-out: {{ formatDate(booking.checkOut) }} before 12 PM</p>
+      <p>Price to be paid: ${{ booking.totalPrice }}</p>
     </div>
   </div>
 </template>

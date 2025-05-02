@@ -47,6 +47,7 @@ const handleFileChange = (event) => {
 };
 
 const addCustomAmenity = () => {
+  showCustomAmenitySection.value = true; // Show the custom amenity section
   customAmenities.value.push({ id: Date.now(), name: '' });
 };
 
@@ -75,8 +76,9 @@ const submitListing = async () => {
   formData.append('availability', JSON.stringify(form.value.availability));
 
   form.value.images.forEach((image, index) => {
-    formData.append(`images[${index}]`, image);
+    formData.append(`images`, image);
   });
+  console.log('Form data being sent:', formData); // Log the form data
 
   try {
     loading.value = true;
@@ -155,7 +157,9 @@ const submitListing = async () => {
             {{ amenity }}
           </label>
         </div>
-        <div>
+        <button type="button" @click="addCustomAmenity">Add Custom Amenity</button>
+
+        <div v-if="showCustomAmenitySection">
           <h3>Custom Amenities</h3>
           <ul>
             <li v-for="(amenity, index) in customAmenities" :key="amenity.id">
@@ -167,7 +171,6 @@ const submitListing = async () => {
               <button type="button" @click="removeCustomAmenity(amenity.id)">Remove</button>
             </li>
           </ul>
-          <button type="button" @click="addCustomAmenity">Add Custom Amenity</button>
         </div>
       </div>
 

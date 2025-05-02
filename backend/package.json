@@ -1,12 +1,12 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "clean": "node script.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "dev": "nodemon index.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.5.0",
+    "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -28,6 +29,7 @@
     "prisma": "^6.5.0"
   },
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2"
   }
 }

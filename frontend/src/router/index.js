@@ -59,10 +59,28 @@ const router = createRouter({
     meta: { requiresAuth: true, ownerOnly: true }
   },
   {
+    path: '/owner/campsite/:id',
+    name: 'CampsiteDetails',
+    component: () => import('@/views/owner/CampsiteDetails.vue'),
+    meta: { requiresAuth: true, ownerOnly: true },
+  },
+  {
     path: '/owner/add-listing',
     name: 'AddListing',
     component: AddListing,
     meta: { requiresAuth: true, ownerOnly: true },
+  },
+  {
+    path: '/owner/bookings',
+    name: 'OwnerBookings',
+    component: () => import('@/views/owner/BookingDetailsOwner.vue'),
+    meta: { requiresAuth: true, ownerOnly: true },
+  },
+  {
+    path: '/messages',
+    name: 'MessagePage',
+    component: () => import('@/views/MessagePage.vue'),
+    meta: { requiresAuth: true },
   },
 
   ],

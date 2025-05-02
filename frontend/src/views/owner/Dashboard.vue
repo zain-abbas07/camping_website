@@ -4,7 +4,6 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 
 const campsites = ref([]);
-const bookings = ref([]);
 const owner = ref(JSON.parse(localStorage.getItem('user')));
 const router = useRouter();
 
@@ -13,24 +12,19 @@ onMounted(async () => {
     // Fetch campsites by owner ID
     const resCampsites = await axios.get(`http://localhost:3000/campsites?ownerId=${owner.value.id}`);
     campsites.value = resCampsites.data;
-
-    // Fetch bookings for owner's campsites
-    const resBookings = await axios.get(`http://localhost:3000/owner/bookings?ownerId=${owner.value.id}`);
-
-    // axios.get('http://localhost:3000/bookings?_expand=campsite');
-    bookings.value = resBookings.data.filter(booking =>
-      campsites.value.some(site => site.id === booking.campsiteId))
-      console.log("Owner dashboard loaded"
-        
-    );
-    // <div v-if="bookings.length === 0">No bookings yet.</div>
   } catch (err) {
-    console.error('Error loading dashboard', err);
+    console.error("Error loading dashboard", err);
   }
 });
+
 const goToAddListing = () => {
-    router.push('/owner/add-listing');
-    };
+  router.push('/owner/add-listing');
+};
+
+const goToCampsiteDetails = (id) => {
+    console.log('Navigating to campsite with ID:', id);
+  router.push(`/owner/campsite/${id}`);
+};
 </script>
 
 <template>
@@ -40,46 +34,66 @@ const goToAddListing = () => {
     <section>
       <h2>Your Campsites</h2>
       <div v-if="campsites.length === 0">No campsites found.</div>
-      <ul>
-        <li v-for="site in campsites" :key="site.id">
-          <strong>{{ site.name }}</strong> — ${{ site.price }}/night
-        </li>
-      </ul>
+      <div v-else class="cards">
+        <div
+          v-for="site in campsites"
+          :key="site.id"
+          class="card"
+          @click="goToCampsiteDetails(site.id)"
+        >
+        <img
+  :src="site.image?.[0]?.url ? `http://localhost:3000/${site.image[0].url}` : 'https://via.placeholder.com/400x200?text=No+Image+Available'"
+  alt="Campsite Image"
+/>
+          <div class="card-content">
+            <h3>{{ site.name }}</h3>
+            <p>{{ site.location?.city || 'Unknown Location' }}</p>
+            <p><strong>${{ site.price }}</strong>/night</p>
+          </div>
+        </div>
+      </div>
       <button @click="goToAddListing">Add New Listing</button>
-    </section>
-
-    <section style="margin-top: 2rem">
-      <h2>Bookings for Your Campsites</h2>
-      <div v-if="bookings.length === 0">No bookings yet.</div>
-      <table v-else>
-        <thead>
-          <tr>
-            <th>Campsite</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
-            <th>Total ($)</th>
-            <th>User ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="booking in bookings" :key="booking.id">
-            <td>{{ booking.campsite.name }}</td>
-            <td>{{ booking.checkIn }}</td>
-            <td>{{ booking.checkOut }}</td>
-            <td>{{ booking.totalPrice }}</td>
-            <td>{{ booking.userId }}</td>
-          </tr>
-        </tbody>
-      </table>
     </section>
   </div>
 </template>
 
 <style scoped>
 .dashboard {
-  max-width: 800px;
+  max-width: 1000px;
   margin: auto;
   padding: 2rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.card-content {
+  padding: 1rem;
 }
 
 button {
@@ -92,17 +106,8 @@ button {
   cursor: pointer;
   font-weight: bold;
 }
+
 button:hover {
   background-color: #1b5e20;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-th, td {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  text-align: left;
 }
 </style>

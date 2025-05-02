@@ -77,8 +77,11 @@ onMounted(fetchCampsite);
   <div class="container">
     <h1>Book {{ campsite?.name }}</h1>
     <p>{{ campsite?.description }}</p>
-    <p>Location: {{ campsite?.location }}</p>
-    <p>Price per night: ${{ campsite?.price }}</p>
+    <p>
+      <strong>Location:</strong>
+      {{ campsite?.location?.city || 'Unknown City' }}, {{ campsite?.location?.country || 'Unknown Country' }}
+    </p>
+    <p><strong>Price per night:</strong> ${{ campsite?.price }}</p>
 
     <form @submit.prevent="submitBooking">
       <label>Check-in</label>
