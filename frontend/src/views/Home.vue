@@ -71,108 +71,173 @@ const viewDetails = (id) => {
 </script>
 
 <template>
-  <div class="px-4 py-8">
-    <h1 class="text-3xl font-bold text-center mb-6">🏕️ Available Campsites</h1>
-
-    <!-- Filters Toggle Button -->
-    <button
-      class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4"
-      @click="showFilters = !showFilters"
-    >
-      {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-    </button>
-
-    <!-- Filters Section -->
-    <div v-if="showFilters" class="bg-gray-100 p-4 rounded shadow-md mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label for="minPrice" class="block font-medium mb-1">Min Price</label>
-          <input
-            v-model="minPrice"
-            type="number"
-            id="minPrice"
-            placeholder="Min Price"
-            class="w-full border border-gray-300 rounded px-3 py-2"
-          />
-        </div>
-        <div>
-          <label for="maxPrice" class="block font-medium mb-1">Max Price</label>
-          <input
-            v-model="maxPrice"
-            type="number"
-            id="maxPrice"
-            placeholder="Max Price"
-            class="w-full border border-gray-300 rounded px-3 py-2"
-          />
-        </div>
-        <div>
-          <label for="location" class="block font-medium mb-1">Location</label>
-          <input
-            v-model="location"
-            type="text"
-            id="location"
-            placeholder="City or Location"
-            class="w-full border border-gray-300 rounded px-3 py-2"
-          />
-        </div>
-      </div>
-      <div class="mt-4">
-        <label class="block font-medium mb-2">Amenities</label>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <label
-            v-for="amenity in availableAmenities"
-            :key="amenity"
-            class="flex items-center space-x-2"
-          >
-            <input
-              type="checkbox"
-              :value="amenity"
-              v-model="selectedAmenities"
-              class="rounded border-gray-300"
-            />
-            <span>{{ amenity }}</span>
-          </label>
-        </div>
+  <div class="min-h-screen">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-green-800 to-green-600 text-white py-16">
+      <div class="container mx-auto px-6">
+        <h1 class="text-4xl md:text-5xl font-bold text-center mb-6">
+          Discover Your Perfect Camping Spot
+        </h1>
+        <p class="text-xl text-center text-green-100 mb-8">
+          Find and book unique camping experiences across the country
+        </p>
       </div>
     </div>
 
-    <!-- User Info -->
-    <div class="text-center mb-6">
-      <template v-if="!userLoading">
-        <template v-if="user">
-          <p class="text-lg">Welcome, {{ user.name }} 👋</p>
-        </template>
-        <template v-else>
-          <p class="text-lg">You are not logged in.</p>
-          <router-link to="/login" class="text-blue-500 hover:underline">Login</router-link> |
-          <router-link to="/signup" class="text-blue-500 hover:underline">Sign Up</router-link>
-        </template>
-      </template>
-    </div>
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-12">
+      <!-- Filter Toggle Button -->
+      <div class="flex justify-center mb-8">
+        <button
+          class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-md"
+          @click="showFilters = !showFilters"
+        >
+          {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+        </button>
+      </div>
 
-    <!-- Campsites -->
-    <div v-if="loading" class="text-center">Loading campsites...</div>
-    <div v-else-if="error" class="text-center text-red-500">{{ error }}</div>
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div
-        v-for="site in campsites"
-        :key="site.id"
-        class="bg-white shadow-md rounded overflow-hidden cursor-pointer hover:shadow-lg"
-        @click="viewDetails(site.id)"
+      <!-- Filters Section -->
+      <!-- Filters Section - Removed max-w-4xl and adjusted width -->
+      <div 
+        v-if="showFilters"
+        class="bg-white rounded-xl shadow-lg p-6 mb-12 transition-all duration-300"
       >
+        <!-- Grid layout for filters - Updated to use full width -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          <!-- Price Filters -->
+          <div class="w-full">
+            <label class="block text-gray-700 font-medium mb-2">Min Price</label>
+            <input
+              v-model="minPrice"
+              type="number"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              placeholder="Min Price"
+            />
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">Max Price</label>
+            <input
+              v-model="maxPrice"
+              type="number"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              placeholder="Max Price"
+            />
+          </div>
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">Location</label>
+            <input
+              v-model="location"
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              placeholder="Enter location"
+            />
+          </div>
+        </div>
+
+        <!-- Amenities -->
+        <div>
+          <label class="block text-gray-700 font-medium mb-2">Amenities</label>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <label
+              v-for="amenity in availableAmenities"
+              :key="amenity"
+              class="flex items-center space-x-2 text-gray-700"
+            >
+              <input
+                type="checkbox"
+                :value="amenity"
+                v-model="selectedAmenities"
+                class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span>{{ amenity }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      
+
+      <!-- Campsites Grid -->
+      <div v-if="loading" class="text-center py-12">
+        <p class="text-lg text-gray-600">Loading amazing camping spots...</p>
+      </div>
+      <div v-else-if="error" class="text-center text-red-500 py-12">
+        {{ error }}
+      </div>
+      <div 
+        v-else
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+      >
+        <!-- Campsite Cards -->
+        <div
+          v-for="site in campsites"
+          :key="site.id"
+          @click="viewDetails(site.id)"
+          class="group bg-white rounded-2xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+    >
+    <div class="relative overflow-hidden">
         <img
           :src="site.image?.[0]?.url
             ? `http://localhost:3000/${site.image[0].url}`
             : 'https://via.placeholder.com/400x200?text=No+Image+Available'"
           alt="Campsite Image"
-          class="w-full h-48 object-cover"
+          class="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <div class="p-4">
-          <h3 class="text-lg font-bold">{{ site.name }}</h3>
-          <p class="text-gray-600">{{ site.location }}</p>
-          <p class="text-green-600 font-bold">${{ site.price }}/night</p>
+        <!-- Optional Price Badge -->
+        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
+          <span class="text-green-600 font-bold">${{ site.price }}/night</span>
+        </div>
+      </div>
+
+          <div class="p-6 space-y-3">
+        <h3 class="text-xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">
+          {{ site.name }}
+        </h3>
+        <div class="flex items-center text-gray-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <p>{{ site.location }}</p>
+        </div>
+        <!-- Optional Amenities Preview -->
+        <div class="pt-4 border-t border-gray-100">
+          <div class="flex flex-wrap gap-2">
+            <span 
+              v-for="amenity in site.amenity?.slice(0, 3)" 
+              :key="amenity.name"
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+            >
+              {{ amenity.name }}
+            </span>
+            <span 
+              v-if="site.amenity?.length > 3" 
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+            >
+              +{{ site.amenity.length - 3 }} more
+            </span>
+          </div>
+        </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  
 </template>
+
+<style scoped>
+.container {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Ensure proper spacing on larger screens */
+@media (min-width: 1280px) {
+  .container {
+    padding-left: 3rem !important;  /* Increased padding */
+    padding-right: 3rem !important; /* Increased padding */
+    padding-bottom: 4rem !important; /* Added bottom padding */
+  }
+}
+</style>

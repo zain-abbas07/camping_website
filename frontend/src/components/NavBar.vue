@@ -17,36 +17,139 @@ const confirmLogout = () => {
 </script>
 
 <template>
-  <nav class="navbar">
-    <router-link to="/">Home</router-link>
+  <nav class="fixed top-0 left-0 w-full bg-white shadow-md z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <!-- Left side - Logo/Brand -->
+        <div class="flex items-center">
+          <router-link 
+            to="/" 
+            class="text-xl font-heading font-bold text-green-700 hover:text-green-800"
+          >
+            🏕️ TrailBlazer
+          </router-link>
+        </div>
 
-    <!-- Links for logged-in users -->
-    <template v-if="user">
-      <router-link v-if="user.role.toLowerCase() === 'owner'" to="/owner/dashboard">Dashboard</router-link>
-      <router-link v-if="user.role.toLowerCase() === 'owner'" to="/owner/add-listing">Add Listing</router-link>
-      <router-link v-if="user.role.toLowerCase() === 'owner'" to="/owner/bookings">Bookings</router-link> <!-- Added this -->
-      <router-link to="/account">My Account</router-link>
-      <router-link v-if="user.role.toLowerCase() === 'user'" to="/bookings">My Bookings</router-link>
-      <router-link to="/messages?receiverId=1">Messages</router-link> <!-- Example link -->
-      <button @click="showLogoutModal = true">Logout</button>
-    </template>
+        <!-- Right side - Navigation Links -->
+        <div class="flex items-center space-x-4">
+          <!-- Welcome message -->
+          <span v-if="user" class="text-gray-700 font-medium">
+            Welcome, {{ user.name }} 👋
+          </span>
 
-    <!-- Links for guests -->
-    <template v-else>
-      <router-link to="/login">Login</router-link>
-      <router-link to="/signup">Sign Up</router-link>
-    </template>
+          <!-- Links for logged-in users -->
+          <template v-if="user">
+            <!-- Owner-specific links -->
+            <div v-if="user.role.toLowerCase() === 'owner'" class="flex items-center space-x-4">
+              <router-link 
+                to="/owner/dashboard"
+                class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+                :class="{ 'text-green-600 font-semibold': $route.path === '/owner/dashboard' }"
+              >
+                Dashboard
+              </router-link>
+
+              <router-link 
+                to="/owner/add-listing"
+                class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+                :class="{ 'text-green-600 font-semibold': $route.path === '/owner/add-listing' }"
+              >
+                Add Listing
+              </router-link>
+
+              <router-link 
+                to="/owner/bookings"
+                class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+                :class="{ 'text-green-600 font-semibold': $route.path === '/owner/bookings' }"
+              >
+                Bookings
+              </router-link>
+            </div>
+
+            <!-- Common user links -->
+            <router-link 
+              to="/account"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+              :class="{ 'text-green-600 font-semibold': $route.path === '/account' }"
+            >
+              My Account
+            </router-link>
+
+            <!-- User-specific links -->
+            <router-link 
+              v-if="user.role.toLowerCase() === 'user'" 
+              to="/bookings"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+              :class="{ 'text-green-600 font-semibold': $route.path === '/bookings' }"
+            >
+              My Bookings
+            </router-link>
+
+            <router-link 
+              to="/messages"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+              :class="{ 'text-green-600 font-semibold': $route.path === '/messages' }"
+            >
+              Messages
+            </router-link>
+
+            <!-- Logout Button -->
+            <button 
+              @click="showLogoutModal = true"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+            >
+              Logout
+            </button>
+          </template>
+
+          <!-- Links for guests -->
+          <template v-else>
+            <router-link 
+              to="/login"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+              :class="{ 'text-green-600 font-semibold': $route.path === '/login' }"
+            >
+              Login
+            </router-link>
+
+            <router-link 
+              to="/signup"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300"
+              :class="{ 'bg-green-700': $route.path === '/signup' }"
+            >
+              Sign Up
+            </router-link>
+          </template>
+        </div>
+      </div>
+    </div>
 
     <!-- Logout Confirmation Modal -->
-    <div v-if="showLogoutModal" class="modal">
-      <div class="modal-content">
-        <p>Are you sure you want to log out?</p>
-        <button @click="confirmLogout">Yes, Logout</button>
-        <button @click="showLogoutModal = false">Cancel</button>
+    <div v-if="showLogoutModal" 
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+        <h3 class="text-lg font-semibold mb-4">Confirm Logout</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to log out?</p>
+        <div class="flex justify-end space-x-4">
+          <button 
+            @click="showLogoutModal = false"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300"
+          >
+            Cancel
+          </button>
+          <button 
+            @click="confirmLogout"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   </nav>
 </template>
+
 
 <style scoped>
 .navbar {
