@@ -74,6 +74,7 @@ a {
 a:hover {
   color: #047857; /* emerald-700 */
 }
+
 .green {
   text-decoration: none;
   color: hsla(160, 100%, 37%, 1);
