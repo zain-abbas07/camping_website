@@ -124,166 +124,201 @@ const deleteAccount = async () => {
 </script>
 
 <template>
-  <div class="account">
-    <h1>My Account</h1>
+  <div class="min-h-screen bg-gradient-to-br from-green-200 via-green-100 to-green-300 py-12 flex items-center justify-center">
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
+       <h1 class="text-3xl font-heading font-bold text-green-700 mb-6 text-center">My Account</h1>
 
-    <!-- Display User Info -->
-    <div class="info">
-      <p>
-        <strong>Name:</strong> {{ form.name }}
-        <button class="change-btn" @click="startEdit('name')">Change</button>
-      </p>
-      <p>
-        <strong>Email:</strong> {{ form.email }}
-        <button class="change-btn" @click="startEdit('email')">Change</button>
-      </p>
-      <p>
-        <strong>Username:</strong> {{ form.username }}
-        <button class="change-btn" @click="startEdit('username')">Change</button>
-      </p>
-      <p>
-        <strong>Phone Number:</strong> {{ form.phoneNumber }}
-        <button class="change-btn" @click="startEdit('phoneNumber')">Change</button>
-      </p>
-    </div>
+      <!-- User Info Section -->
+      <div class="space-y-4 mb-8">
+        <div class="flex items-center gap-4">
+          <div class="flex-shrink-0 w-16 h-16 bg-green-200 rounded-full flex items-center justify-center text-2xl font-bold text-green-700">
+            {{ form.name?.charAt(0) || 'U' }}
+          </div>
+          <div>
+            <p class="text-xl font-semibold text-gray-800">{{ form.name }}</p>
+            <p class="text-gray-500">{{ form.email }}</p>
+            <p class="text-gray-400 text-sm">Username: {{ form.username }}</p>
+            <p class="text-gray-400 text-sm">Phone: {{ form.phoneNumber || 'N/A' }}</p>
+          </div>
+        </div>
+      </div>
 
-    <!-- Password Validation Modal -->
-    <div v-if="showPasswordModal" class="modal">
-      <div class="modal-content">
-        <p>Please enter your password to proceed.</p>
-        <input v-model="password" type="password" placeholder="Enter your password" />
-        <button @click="validatePassword" :disabled="loading">
-          {{ loading ? 'Validating...' : 'Submit' }}
+      <!-- Editable Fields -->
+      <div class="divide-y divide-gray-200">
+        <div class="py-4 flex items-center justify-between">
+          <span class="font-medium text-gray-700">Name</span>
+          <span class="text-gray-900">{{ form.name }}</span>
+          <button
+            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold"
+            @click="startEdit('name')"
+          >Change</button>
+        </div>
+        <div class="py-4 flex items-center justify-between">
+          <span class="font-medium text-gray-700">Email</span>
+          <span class="text-gray-900">{{ form.email }}</span>
+          <button
+            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold"
+            @click="startEdit('email')"
+          >Change</button>
+        </div>
+        <div class="py-4 flex items-center justify-between">
+          <span class="font-medium text-gray-700">Username</span>
+          <span class="text-gray-900">{{ form.username }}</span>
+          <button
+            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold"
+            @click="startEdit('username')"
+          >Change</button>
+        </div>
+        <div class="py-4 flex items-center justify-between">
+          <span class="font-medium text-gray-700">Phone Number</span>
+          <span class="text-gray-900">{{ form.phoneNumber || 'N/A' }}</span>
+          <button
+            class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold"
+            @click="startEdit('phoneNumber')"
+          >Change</button>
+        </div>
+      </div>
+
+      <!-- Password Section -->
+      <div class="mt-8 flex items-center justify-between">
+        <span class="font-medium text-gray-700">Password</span>
+        <button
+          class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold"
+          @click="startEdit('password')"
+        >Change Password</button>
+      </div>
+
+      <!-- Delete Account -->
+      <div class="mt-8 text-center">
+        <button
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 font-semibold"
+          @click="showDeleteModal = true"
+        >
+          Delete Account
         </button>
-        <button @click="showPasswordModal = false">Cancel</button>
       </div>
     </div>
 
-    <!-- Edit Field -->
-    <div v-if="editField && showUpdateModal" class="edit-field">
-      <h2>Change {{ editField }}</h2>
-      <label for="newValue">New {{ editField }}</label>
-      <input v-model="newValue" id="newValue" type="text" required />
-
-      <label for="confirmValue">Confirm New {{ editField }}</label>
-      <input v-model="confirmValue" id="confirmValue" type="text" required />
-
-      <button @click="updateField" :disabled="loading">
-        {{ loading ? 'Updating...' : 'Update' }}
-      </button>
-      <button @click="cancelEdit">Cancel</button>
+    <!-- Modals -->
+    <div v-if="showPasswordModal" class="modal">
+      <div class="modal-content">
+        <p class="mb-4">Please enter your password to proceed.</p>
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Enter your password"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="validatePassword"
+            :disabled="loading"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            {{ loading ? 'Validating...' : 'Submit' }}
+          </button>
+          <button
+            @click="showPasswordModal = false"
+            class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+          >Cancel</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Error Modal -->
+    <div v-if="editField && showUpdateModal" class="modal">
+      <div class="modal-content">
+        <h2 class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors duration-200 text-sm font-semibold">
+          Change {{ editField }}
+        </h2>
+        <label class="block mb-2" :for="editField">New {{ editField }}</label>
+        <input
+          v-model="newValue"
+          :id="editField"
+          type="text"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mb-4"
+        />
+        <label class="block mb-2" :for="'confirm' + editField">Confirm New {{ editField }}</label>
+        <input
+          v-model="confirmValue"
+          :id="'confirm' + editField"
+          type="text"
+          required
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mb-4"
+        />
+        <div class="flex justify-end gap-2">
+          <button
+            @click="updateField"
+            :disabled="loading"
+            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            {{ loading ? 'Updating...' : 'Update' }}
+          </button>
+          <button
+            @click="cancelEdit"
+            class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+          >Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteModal" class="modal">
+      <div class="modal-content">
+        <p class="mb-4">Please enter your password to delete your account.</p>
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Enter your password"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+        />
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="deleteAccount"
+            :disabled="loading"
+            class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            {{ loading ? 'Deleting...' : 'Yes, Delete' }}
+          </button>
+          <button
+            @click="showDeleteModal = false"
+            class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+          >Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showErrorModal" class="modal">
       <div class="modal-content">
         <p>{{ errorMessage }}</p>
-        <button @click="showErrorModal = false">Close</button>
-      </div>
-    </div>
-
-    <hr />
-
-    <!-- Delete Account -->
-    <button class="delete-account" @click="showDeleteModal = true">
-      Delete Account
-    </button>
-
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="modal">
-      <div class="modal-content">
-        <p>Please enter your password to delete your account.</p>
-        <input v-model="password" type="password" placeholder="Enter your password" />
-        <button @click="deleteAccount" :disabled="loading">
-          {{ loading ? 'Deleting...' : 'Yes, Delete' }}
-        </button>
-        <button @click="showDeleteModal = false">Cancel</button>
+        <button
+          @click="showErrorModal = false"
+          class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 mt-4"
+        >Close</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.account {
-  max-width: 600px;
-  margin: auto;
-  padding: 2rem;
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.font-heading {
+  font-family: var(--font-heading);
 }
-
-.info {
-  margin-bottom: 2rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-}
-
-input {
-  width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-button {
-  padding: 0.6rem 1rem;
-  background-color: #2e7d32;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-button.change-btn {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.7rem;
-  background-color: #4caf50;
-}
-
-button.change-btn:hover {
-  background-color: #388e3c;
-}
-
-button.delete-account {
-  background-color: #d32f2f;
-}
-
-button:disabled {
-  background-color: #a5d6a7;
-  cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
-  background-color: #1b5e20;
-}
-
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.4);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  z-index: 50;
 }
-
 .modal-content {
-  background: white;
+  background: #fff;
+  border-radius: 1rem;
   padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.modal-content button {
-  margin: 0.5rem;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  text-align: left;
 }
 </style>

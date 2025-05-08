@@ -82,6 +82,11 @@ const router = createRouter({
     component: () => import('@/views/MessagePage.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/messages/chat',
+    name: 'MessageChat',
+    component: () => import('@/views/user/MessageChat.vue')
+  }
 
   ],
 })

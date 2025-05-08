@@ -147,7 +147,7 @@ const sendMessage = async () => {
 
     <!-- Placeholder for booking button -->
     <button @click="goToBooking">Book This Spot</button>
-  <!-- Messaging Section -->
+  <!-- Messaging Section
   <div v-if="user && campsite.owner" class="messaging">
       <h3>Message the Owner</h3>
       <div class="messages">
@@ -168,7 +168,7 @@ const sendMessage = async () => {
         />
         <button @click="sendMessage">Send</button>
       </div>
-    </div>
+    </div> -->
   </div>
   <div v-else>
     <p>Loading campsite...</p>

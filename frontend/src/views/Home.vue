@@ -85,7 +85,7 @@ const viewDetails = (id) => {
     </div>
 
     <!-- Main Content with consistent background -->
-    <div class="bg-gradient-to-br from-green-50 via-blue-50 to-green-100 w-full min-h-[80vh] py-10">
+    <div class="min-h-screen bg-gradient-to-br from-green-200 via-green-100 to-green-300 py-10">
       <div class="container mx-auto px-6">
         <!-- Search Bar -->
         <form @submit.prevent="fetchCampsites" class="flex flex-col md:flex-row gap-4 items-center justify-center bg-white/80 p-4 rounded-xl shadow mb-0">

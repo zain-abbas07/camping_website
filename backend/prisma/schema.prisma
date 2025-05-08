@@ -60,6 +60,7 @@ model campsite {
   owner         user?          @relation(fields: [ownerId], references: [id], map: "Campsite_ownerId_fkey")
   image        image[]
   review       review[]
+  messages     message[]      @relation("CampsiteMessages") 
 
   @@index([ownerId], map: "Campsite_ownerId_fkey")
 }
@@ -150,11 +151,12 @@ model message {
   id          Int      @id @default(autoincrement())
   senderId    Int
   receiverId  Int
+  campsiteId  Int? 
   content     String
   createdAt   DateTime @default(now())
   sender      user     @relation("SenderRelation", fields: [senderId], references: [id], map: "Message_senderId_fkey")
   receiver    user     @relation("ReceiverRelation", fields: [receiverId], references: [id], map: "Message_receiverId_fkey")
-
+  listing     campsite? @relation("CampsiteMessages", fields: [campsiteId], references: [id]) // <-- ADD relation name
   @@index([senderId], map: "Message_senderId_fkey")
   @@index([receiverId], map: "Message_receiverId_fkey")
 }

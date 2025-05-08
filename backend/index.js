@@ -584,7 +584,7 @@ app.get('/messages', async (req, res) => {
 
 // Send a message
 app.post('/messages', async (req, res) => {
-  const { senderId, receiverId, content } = req.body;
+  const { senderId, receiverId, content, campsiteId } = req.body;
 
   if (!senderId || !receiverId || !content) {
     return res.status(400).json({ error: 'Missing senderId, receiverId, or content' });
@@ -596,12 +596,82 @@ app.post('/messages', async (req, res) => {
         senderId: parseInt(senderId),
         receiverId: parseInt(receiverId),
         content,
+        campsiteId: campsiteId ? parseInt(campsiteId) : null,
       },
     });
 
     res.json(message);
   } catch (err) {
     console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+// Get messages between two users with optional campsiteId filter
+app.get('/messages', async (req, res) => {
+  const { senderId, receiverId, campsiteId } = req.query;
+  if (!senderId || !receiverId) {
+    return res.status(400).json({ error: 'Missing senderId or receiverId' });
+  }
+  try {
+    const where = {
+      OR: [
+        { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
+        { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
+      ],
+    };
+    if (campsiteId) where.campsiteId = parseInt(campsiteId);
+    const messages = await prisma.message.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all conversations for a user (grouped by other user and listing)
+app.get('/messages/inbox', async (req, res) => {
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+  try {
+    // Get all messages where user is sender or receiver
+    const messages = await prisma.message.findMany({
+      where: {
+        OR: [
+          { senderId: parseInt(userId) },
+          { receiverId: parseInt(userId) }
+        ]
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sender: { select: { id: true, name: true } },
+        receiver: { select: { id: true, name: true } }
+      }
+    });
+
+    // Group by other user (the "chat partner") and (optionally) listing
+    const conversationsMap = {};
+    for (const msg of messages) {
+      // Find the chat partner (the other user)
+      const partner = msg.senderId === parseInt(userId) ? msg.receiver : msg.sender;
+      const key = `${partner.id}-${msg.campsiteId}`; // group by partner and campsite
+      if (!conversationsMap[key]) {
+        conversationsMap[key] = {
+          partnerId: partner.id,
+          partnerName: partner.name,
+          campsiteId: msg.campsiteId, // always include this
+          lastMessage: msg.content,
+          lastMessageTime: msg.createdAt,
+        };
+      }
+    }
+
+    const conversations = Object.values(conversationsMap);
+    res.json(conversations);
+  } catch (err) {
+    console.error('Error fetching inbox:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
