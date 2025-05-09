@@ -107,18 +107,24 @@ app.post('/campsites', upload.array('images'), async (req, res) => {
 });
 
 // Fetch all campsites
+// Fetch all campsites
 app.get("/campsites", async (req, res) => {
   const { minPrice, maxPrice, location, amenities, ownerId } = req.query;
 
+  // Build amenity filters for AND logic
+  const amenitiesArray = amenities ? amenities.split(",") : [];
+  const amenityFilters = amenitiesArray.map(name => ({
+    amenity: { some: { name } }
+  }));
+
   try {
-    const campsites = await prisma.campsite.findMany({
-      where: {
-        AND: [
-          ownerId ? { ownerId: parseInt(ownerId) } : {}, // Filter by ownerId
-          minPrice ? { price: { gte: parseFloat(minPrice) } } : {},
-          maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {},
-          location
-            ? {
+    const where = {
+      AND: [
+        ownerId ? { ownerId: parseInt(ownerId) } : {},
+        minPrice ? { price: { gte: parseFloat(minPrice) } } : {},
+        maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {},
+        location
+          ? {
               location: {
                 is: {
                   city: {
@@ -127,18 +133,12 @@ app.get("/campsites", async (req, res) => {
                 },
               },
             }
-            : {},
-          amenities
-            ? {
-              amenity: {
-                some: {
-                  name: { in: amenities.split(","), }, // Filter by amenities},
-                },
-              },
-            }
-            : {},
-        ],
-      },
+          : {},
+        ...amenityFilters, // <-- This is the key change!
+      ],
+    };
+    const campsites = await prisma.campsite.findMany({
+      where,
       include: {
         location: true,
         amenity: true,
@@ -401,6 +401,37 @@ app.post("/bookings", async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
+app.get('/bookings/check-duplicate', async (req, res) => {
+  const { userId, campsiteId, checkIn, checkOut } = req.query;
+
+  try {
+    const existingBooking = await prisma.booking.findFirst({
+      where: {
+        userId: parseInt(userId),
+        campsiteId: parseInt(campsiteId),
+        OR: [
+          {
+            checkIn: {
+              lte: new Date(checkOut),
+            },
+            checkOut: {
+              gte: new Date(checkIn),
+            },
+          },
+        ],
+      },
+    });
+
+    if (existingBooking) {
+      return res.json({ isDuplicate: true });
+    }
+
+    res.json({ isDuplicate: false });
+  } catch (err) {
+    console.error('Error checking for duplicate bookings:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Cancel a booking
 app.delete('/bookings/:id', async (req, res) => {
@@ -556,31 +587,7 @@ app.delete('/users/:id', async (req, res) => {
 
 // ========== <Messages> ==========
 
-// Fetch messages between two users
-app.get('/messages', async (req, res) => {
-  const { senderId, receiverId } = req.query;
 
-  if (!senderId || !receiverId) {
-    return res.status(400).json({ error: 'Missing senderId or receiverId' });
-  }
-
-  try {
-    const messages = await prisma.message.findMany({
-      where: {
-        OR: [
-          { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
-          { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
-        ],
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    res.json(messages);
-  } catch (err) {
-    console.error('Error fetching messages:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Send a message
 app.post('/messages', async (req, res) => {
@@ -609,23 +616,30 @@ app.post('/messages', async (req, res) => {
 // Get messages between two users with optional campsiteId filter
 app.get('/messages', async (req, res) => {
   const { senderId, receiverId, campsiteId } = req.query;
-  if (!senderId || !receiverId) {
-    return res.status(400).json({ error: 'Missing senderId or receiverId' });
+
+  if (!senderId || !receiverId || !campsiteId) {
+    return res.status(400).json({ error: 'Missing senderId, receiverId, or campsiteId' });
   }
+
   try {
-    const where = {
-      OR: [
-        { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
-        { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
-      ],
-    };
-    if (campsiteId) where.campsiteId = parseInt(campsiteId);
     const messages = await prisma.message.findMany({
-      where,
+      where: {
+        AND: [
+          {
+            OR: [
+              { senderId: parseInt(senderId), receiverId: parseInt(receiverId) },
+              { senderId: parseInt(receiverId), receiverId: parseInt(senderId) },
+            ],
+          },
+          { campsiteId: parseInt(campsiteId) }, // Filter by campsiteId
+        ],
+      },
       orderBy: { createdAt: 'asc' },
     });
+
     res.json(messages);
   } catch (err) {
+    console.error('Error fetching messages:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

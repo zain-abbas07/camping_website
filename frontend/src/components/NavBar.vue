@@ -23,6 +23,7 @@ function goToMessages() {
 </script>
 
 <template>
+  
   <nav class="fixed top-0 left-0 w-full bg-white shadow-md z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
@@ -76,8 +77,8 @@ function goToMessages() {
             <router-link 
               to="/account"
               class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
-              :class="{ 'text-green-600 font-semibold': $route.path === '/account' }"
-            >
+              :class="{ 'font-semibold': $route.path === '/account' }"
+              > 
               My Account
             </router-link>
 
@@ -86,35 +87,35 @@ function goToMessages() {
               v-if="user.role.toLowerCase() === 'user'" 
               to="/bookings"
               class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
-              :class="{ 'text-green-600 font-semibold': $route.path === '/bookings' }"
-            >
+              :class="{ 'font-semibold': $route.path === '/bookings' }"
+              >
               My Bookings
             </router-link>
 
-            <button
-              @click="goToMessages"
+            <router-link
+              to="/messages"
               class="relative px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
               aria-label="Messages"
-              >
-              <!-- Bell or chat icon (Heroicons example) -->
+            >
+              <!-- Chat Icon -->
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8m-8 4h4m-6 6v-2a2 2 0 00-2-2H4a2 2 0 01-2-2V6a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z" />
               </svg>
               <!-- Notification badge (show only if unreadMessages > 0) -->
               <span v-if="unreadMessages > 0"
                 class="absolute top-1 right-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                 {{ unreadMessages }}
               </span>
-            </button>
+            </router-link>
 
             <!-- Logout Button -->
-            <button 
-              @click="showLogoutModal = true"
-              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
-            >
-              Logout
-            </button>
+            <router-link
+            to="#"
+            class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+            @click.prevent="showLogoutModal = true"
+          >
+            Logout
+          </router-link>
           </template>
 
           <!-- Links for guests -->
@@ -140,28 +141,27 @@ function goToMessages() {
     </div>
 
     <!-- Logout Confirmation Modal -->
-    <div v-if="showLogoutModal" 
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
-      <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Confirm Logout</h3>
-        <p class="text-gray-600 mb-6">Are you sure you want to log out?</p>
-        <div class="flex justify-end space-x-4">
-          <button 
-            @click="showLogoutModal = false"
-            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300"
-          >
-            Cancel
-          </button>
-          <button 
-            @click="confirmLogout"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+    <div v-if="showLogoutModal" class="fixed inset-0 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+    <h3 class="text-lg font-semibold text-green-700 mb-4">Confirm Logout</h3>
+    <p class="text-gray-600 mb-6">Are you sure you want to log out?</p>
+    <div class="flex justify-end space-x-4">
+      <button
+        @click="showLogoutModal = false"
+        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-300"
+        >
+        Cancel
+      </button>
+      <button
+        @click="confirmLogout"
+        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300"
+        :disabled="loading"
+      >
+        Logout
+      </button>
     </div>
+  </div>
+</div>
   </nav>
 </template>
 
@@ -182,12 +182,27 @@ function goToMessages() {
 }
 
 .navbar a {
-  margin: 0 1rem;
-  text-decoration: none;
+  background: none;
+  border: none;
   color: #333;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-button {
+.navbar a:hover {
+  color: #2e7d32; /* Green text color on hover */
+  background-color: transparent; /* No background color */
+  text-decoration: none; /* Prevent underline */
+}
+
+.navbar a.router-link-active {
+  font-weight: bold;
+  color: #2e7d32; /* Active link color */
+}
+
+.navbar button {
   background: none;
   border: none;
   color: #333;
@@ -195,13 +210,9 @@ button {
   font-size: 1rem;
 }
 
-button:hover {
+.navbar button:hover {
   text-decoration: underline;
-}
-
-.navbar a.router-link-active {
-  font-weight: bold;
-  color: #2e7d32;
+  color: #2e7d32; /* Green text color on hover */
 }
 
 .modal {
@@ -210,10 +221,11 @@ button:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5); /* Optional: Add a subtle overlay */
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 50;
 }
 
 .modal-content {
@@ -221,28 +233,49 @@ button:hover {
   padding: 2rem;
   border-radius: 12px;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h3 {
+  color: #2e7d32; /* Green heading color */
+}
+
+.modal-content p {
+  color: #4b5563; /* Gray text color */
 }
 
 .modal-content button {
   margin: 0.5rem;
   padding: 0.6rem 1rem;
-  background-color: #2e7d32;
-  color: white;
-  border: none;
   border-radius: 8px;
-  cursor: pointer;
   font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none; /* Prevent underline */
 }
 
-.modal-content button:hover {
-  background-color: #1b5e20;
+.modal-content button:first-child {
+  background-color: white;
+  border: 1px solid #ccc;
+  color: #333;
+}
+
+.modal-content button:first-child:hover {
+  background-color: #f5f5f5;
 }
 
 .modal-content button:last-child {
-  background-color: #d32f2f;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
 }
 
 .modal-content button:last-child:hover {
-  background-color: #b71c1c;
+  background-color: #1b5e20;
+}
+
+.modal-content button:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
 }
 </style>

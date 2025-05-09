@@ -71,7 +71,8 @@ const viewDetails = (id) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 pt-8">
+  <div class="min-h-screen bg-gray-100">
+    
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-green-800 to-green-600 text-white py-16">
       <div class="container mx-auto px-6">
@@ -88,7 +89,7 @@ const viewDetails = (id) => {
     <div class="min-h-screen bg-gradient-to-br from-green-200 via-green-100 to-green-300 py-10">
       <div class="container mx-auto px-6">
         <!-- Search Bar -->
-        <form @submit.prevent="fetchCampsites" class="flex flex-col md:flex-row gap-4 items-center justify-center bg-white/80 p-4 rounded-xl shadow mb-0">
+        <form @submit.prevent="fetchCampsites" class="flex flex-col md:flex-row gap-4 items-center justify-center bg-white/80 p-4 rounded-xl shadow mb-6">
           <input
             v-model="location"
             type="text"
@@ -124,17 +125,20 @@ const viewDetails = (id) => {
           </button>
         </form>
 
-        <!-- Filters Section (no margin-top, so it sits right below the search bar) -->
-        <div 
-          v-if="showFilters"
-          class="bg-white rounded-xl shadow-lg p-6 mb-12 transition-all duration-300 mt-4"
-        >
+        <div class="h-4"></div>
+
+<!-- Filters Section -->
+          <div 
+            v-if="showFilters"
+            class="bg-white rounded-xl shadow-lg p-6 mb-12 transition-all duration-300"
+          >
           <!-- ...filters content... -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             <!-- Add your advanced filters here -->
           </div>
           <div>
-            <label class="block text-gray-700 font-medium mb-2">Amenities</label>
+            <label class="block text-gray-700 text-xl font-medium mb-2">Amenities</label>
+            
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <label
                 v-for="amenity in availableAmenities"
@@ -152,6 +156,7 @@ const viewDetails = (id) => {
             </div>
           </div>
         </div>
+        <div class="h-4"></div>
         <!-- Optional: Add a button to clear filters -->
         <button
           v-if="showFilters"
@@ -160,7 +165,7 @@ const viewDetails = (id) => {
         >
           Clear Filters
         </button>
-
+        <div class="h-4"></div>
       
 
       <!-- Campsites Grid -->
@@ -172,7 +177,7 @@ const viewDetails = (id) => {
         </div>
         <div 
           v-else
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mt-6"
         >
           <!-- Campsite Cards -->
           <div
@@ -188,7 +193,7 @@ const viewDetails = (id) => {
             : 'https://via.placeholder.com/400x200?text=No+Image+Available'"
           alt="Campsite Image"
           class="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+              />
         <!-- Optional Price Badge -->
         <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
           <span class="text-green-600 font-bold">${{ site.price }}/night</span>

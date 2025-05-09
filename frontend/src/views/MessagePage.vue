@@ -16,7 +16,6 @@ if (!user) {
 onMounted(async () => {
   try {
     loading.value = true;
-    // Fetch all conversations for the user
     const res = await axios.get(`http://localhost:3000/messages/inbox?userId=${user.id}`);
     conversations.value = res.data;
   } catch (err) {
@@ -33,33 +32,104 @@ function openChat(conversation) {
     query: {
       receiverId: conversation.partnerId,
       campsiteId: conversation.campsiteId,
-      // If you group by listing, also pass listingId: conversation.listingId
-    }
+    },
   });
 }
-</script>
 
+function formatDate(dateString) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+}
+</script>
 <template>
-  <div class="max-w-2xl mx-auto py-8">
-    <h1 class="text-2xl font-bold mb-6">Messages</h1>
-    <div v-if="loading" class="text-center text-gray-500">Loading...</div>
-    <div v-else-if="conversations.length === 0" class="text-center text-gray-400">No conversations yet.</div>
-    <ul v-else class="space-y-4">
+  <div class="max-w-4xl mx-auto py-8 px-4">
+    <!-- Header Section -->
+    <h1 class="text-4xl font-bold text-green-700 mb-8 text-center">Messages</h1>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center text-gray-500 py-12">
+      Loading conversations...
+    </div>
+
+    <!-- No Conversations -->
+    <div v-else-if="conversations.length === 0" class="text-center text-gray-400 py-12">
+      <p class="text-lg">You have no conversations yet.</p>
+    </div>
+
+    <!-- Conversations List -->
+    <ul v-else class="space-y-6">
       <li
         v-for="conv in conversations"
         :key="conv.partnerId + '-' + conv.campsiteId"
         @click="conv.campsiteId ? openChat(conv) : null"
         :class="[
-          'flex items-center gap-4 bg-white rounded-xl shadow p-4 transition',
-          conv.campsiteId ? 'cursor-pointer hover:bg-green-50' : 'opacity-50 cursor-not-allowed'
+          'flex items-center gap-4 bg-white rounded-lg shadow-md p-5 transition-all duration-300',
+          conv.campsiteId ? 'cursor-pointer hover:shadow-lg hover:-translate-y-1' : 'opacity-50 cursor-not-allowed'
         ]"
       >
+        <!-- Partner Avatar -->
+        <div class="flex-shrink-0 w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-lg">
+          {{ conv.partnerName.charAt(0) }}
+        </div>
+
+        <!-- Conversation Details -->
         <div class="flex-1">
-          <div class="font-semibold text-green-800">{{ conv.partnerName }}</div>
-          <div class="text-xs text-gray-400 truncate">{{ conv.lastMessage }}</div>
-          <div v-if="!conv.campsiteId" class="text-xs text-red-500">No campsite linked</div>
+          <div class="font-semibold text-green-800 text-lg">{{ conv.partnerName }}</div>
+          <div class="text-sm text-gray-500 truncate">{{ conv.lastMessage }}</div>
+          <div v-if="!conv.campsiteId" class="text-sm text-red-500 mt-1">No campsite linked</div>
+        </div>
+
+        <!-- Timestamp -->
+        <div class="text-sm text-gray-400">
+          {{ formatDate(conv.lastMessageTime) }}
         </div>
       </li>
     </ul>
   </div>
 </template>
+
+<style scoped>
+/* Container Styling */
+.max-w-4xl {
+  max-width: 64rem;
+}
+
+/* List Item Styling */
+li {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Avatar Styling */
+.flex-shrink-0 {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #e6f4ea;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #2e7d32;
+  font-size: 1.25rem;
+}
+
+/* Timestamp Styling */
+.text-sm {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Header Styling */
+h1 {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #2e7d32;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+</style>

@@ -64,16 +64,9 @@ nav a {
   font-weight: 500;
 }
 
-/* Regular links */
-a {
-  text-decoration: none;
-  color: #059669; /* emerald-600 */
-  transition: color 0.2s ease;
-}
 
-a:hover {
-  color: #047857; /* emerald-700 */
-}
+
+
 
 .green {
   text-decoration: none;
@@ -84,7 +77,7 @@ a:hover {
 
 @media (hover: hover) {
   a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+    background-color: transparent;
   }
 }
 

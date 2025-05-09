@@ -7,7 +7,8 @@
         <div
           v-for="booking in activeBookings"
           :key="booking.id"
-          class="bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-2 relative border border-green-100"
+          class="group bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-2 relative border border-green-100 transition-transform duration-300 hover:shadow-xl hover:-translate-y-1"
+          @click="goToCampsite(booking.campsite.id)"
         >
           <div class="flex items-center gap-4 mb-2">
             <img
@@ -50,7 +51,8 @@
           <div
             v-for="booking in expiredBookings"
             :key="booking.id"
-            class="bg-gray-100 rounded-2xl shadow p-6 flex flex-col gap-2 opacity-60 border border-gray-200"
+            class="group bg-gray-100 rounded-2xl shadow p-6 flex flex-col gap-2 opacity-60 border border-gray-200 transition-transform duration-300 hover:shadow-lg hover:-translate-y-1"
+            @click="goToCampsite(booking.campsite.id)"
           >
             <div class="flex items-center gap-4 mb-2">
               <img
@@ -130,4 +132,7 @@ const activeBookings = computed(() =>
 const expiredBookings = computed(() =>
   bookings.value.filter(b => new Date(b.checkOut) < new Date())
 )
+function goToCampsite(campsiteId) {
+  router.push(`/campsite/${campsiteId}`)
+}
 </script>
