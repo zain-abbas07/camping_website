@@ -16,10 +16,11 @@ const form = ref({
   description: '',
   price: '',
   location: {
-    country: '',
-    state: '',
+    street: '',
+    houseNumber: '',
     city: '',
-    address: '',
+    state: '',
+    country: '',
   },
   amenities: [],
   availability: [],
@@ -155,23 +156,24 @@ const confirmSubmit = () => {
 
       <!-- Location Details -->
       <div>
-        <label for="country">Country</label>
-        <input v-model="form.location.country" type="text" id="country" placeholder="Enter country" required />
+        <label for="street">Street Name</label>
+        <input v-model="form.location.street" type="text" id="street" placeholder="Enter street name" required />
       </div>
-
       <div>
-        <label for="state">State</label>
-        <input v-model="form.location.state" type="text" id="state" placeholder="Enter state" />
+        <label for="houseNumber">House Number</label>
+        <input v-model="form.location.houseNumber" type="text" id="houseNumber" placeholder="Enter house number" required />
       </div>
-
       <div>
         <label for="city">City</label>
         <input v-model="form.location.city" type="text" id="city" placeholder="Enter city" required />
       </div>
-
       <div>
-        <label for="address">Address</label>
-        <input v-model="form.location.address" type="text" id="address" placeholder="Enter address" />
+        <label for="state">State/Province</label>
+        <input v-model="form.location.state" type="text" id="state" placeholder="Enter state/province" />
+      </div>
+      <div>
+        <label for="country">Country</label>
+        <input v-model="form.location.country" type="text" id="country" placeholder="Enter country" required />
       </div>
 
       <!-- Amenities -->

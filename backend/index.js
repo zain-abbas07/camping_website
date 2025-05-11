@@ -51,43 +51,40 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Create a campsite
 app.post('/campsites', upload.array('images'), async (req, res) => {
-  console.log('Request body:', req.body); // Log the request body
-  console.log('Uploaded files:', req.files);
   const { ownerId, name, description, price, location, amenities } = req.body;
-  //const images = req.files.map((file) => `uploads/${file.filename}`); // Store relative paths
-
+  const parsedLocation = JSON.parse(location);
+  const address = `${parsedLocation.street || ''} ${parsedLocation.houseNumber || ''}, ${parsedLocation.city}, ${parsedLocation.state || ''}, ${parsedLocation.country}`;
+  // Geocode using Google Maps API
   try {
-    // Fetch latitude and longitude using Nominatim
-    const parsedLocation = JSON.parse(location);
-
-    const address = `${parsedLocation.city}, ${parsedLocation.state || ''}, ${parsedLocation.country}`;
-    const geocodeRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+    const geoRes = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
       params: {
-        q: address,
-        format: 'json',
-        limit: 1,
+        address,
+        key: process.env.GOOGLE_MAPS_API_KEY,
       },
     });
 
-    if (geocodeRes.data.length === 0) {
-      return res.status(400).json({ success: false, error: 'Unable to fetch coordinates for the given address.' });
+    if (
+      geoRes.data.status !== 'OK' ||
+      !geoRes.data.results ||
+      geoRes.data.results.length === 0
+    ) {
+      return res.status(400).json({ success: false, error: 'Unable to geocode address.' });
     }
 
-    const { lat, lon } = geocodeRes.data[0];
-    // Create the campsite with the fetched coordinates
+    const { lat, lng } = geoRes.data.results[0].geometry.location;
+
+    // Save to DB with coordinates
     const campsite = await prisma.campsite.create({
       data: {
-        owner: {
-          connect: { id: parseInt(ownerId) },
-        },
+        owner: { connect: { id: parseInt(ownerId) } },
         name,
         description,
         price: parseFloat(price),
         location: {
           create: {
-            ...JSON.parse(location),
-            latitude: parseFloat(lat),
-            longitude: parseFloat(lon),
+            ...parsedLocation,
+            latitude: lat,
+            longitude: lng,
           },
         },
         amenity: {

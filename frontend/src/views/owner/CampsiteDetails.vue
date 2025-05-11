@@ -2,7 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import { GMapMap, GMapMarker } from '@fawmi/vue-google-maps';
+
 
 
 const route = useRoute();
@@ -147,7 +147,7 @@ const toggleEditMode = () => {
       </div>
 
       <!-- Map Section -->
-      <<div>
+      <div>
         <h2 class="text-xl font-semibold text-gray-700 mb-2">Location</h2>
         <GMapMap
           v-if="campsite.location && campsite.location.latitude && campsite.location.longitude"

@@ -77,14 +77,16 @@ model image {
 }
 
 model location {
-  id       Int       @id @default(autoincrement())
-  country  String
-  state    String?
-  city     String
-  address  String?
-  latitude Float      @default(0)
-  longitude Float     @default(0)
-  campsite campsite?
+  id          Int      @id @default(autoincrement())
+  country     String
+  state       String?
+  city        String
+  street      String?   // <-- Add this
+  houseNumber String?   // <-- Add this
+  address     String?   // (optional: can be used for full address)
+  latitude    Float     @default(0)
+  longitude   Float     @default(0)
+  campsite    campsite?
 }
 
 model passwordresettoken {
