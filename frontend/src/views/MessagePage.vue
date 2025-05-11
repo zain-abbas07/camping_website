@@ -57,7 +57,7 @@ function formatDate(dateString) {
     </div>
 
     <!-- Conversations List -->
-    <ul v-else class="space-y-6">
+    <ul v-else class="!space-y-6">
       <li
         v-for="conv in conversations"
         :key="conv.partnerId + '-' + conv.campsiteId"

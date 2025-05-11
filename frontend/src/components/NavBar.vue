@@ -130,8 +130,8 @@ function goToMessages() {
 
             <router-link 
               to="/signup"
-              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300"
-              :class="{ 'bg-green-700': $route.path === '/signup' }"
+              class="px-4 py-2 text-gray-700 hover:text-green-600 transition-colors duration-200"
+              :class="{ 'text-green-600 font-semibold': $route.path === '/signup' }"
             >
               Sign Up
             </router-link>

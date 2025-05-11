@@ -2,7 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import L from 'leaflet'
+
 
 const route = useRoute();
 const router = useRouter();
@@ -19,23 +19,7 @@ onMounted(async () => {
     campsite.value = res.data;
 
     
-    // Initialize the map after campsite data is loaded
-    if (
-      campsite.value.location &&
-      campsite.value.location.latitude !== undefined &&
-      campsite.value.location.longitude !== undefined
-    ) {
-      await nextTick();
-      const mapElement = document.getElementById('map');
-      if (!mapElement) {
-        console.error('Map container not found in the DOM.');
-        return;
-      }
-      initializeMap(campsite.value.location);
-    } else {
-      console.error("Invalid location data:", campsite.value.location);
-      alert("Location data is missing or invalid for this campsite.");
-    }
+  
 
     // Fetch messages between the user and the owner
     if (user && campsite.value.owner) {
@@ -48,20 +32,7 @@ onMounted(async () => {
   }
 });
 
-const initializeMap = (location) => {
-  const { latitude, longitude } = location
 
-  // Initialize the map
-  map.value = L.map('map').setView([latitude, longitude], 13)
-
-  // Add a tile layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map.value)
-
-  // Add a marker
-  L.marker([latitude, longitude]).addTo(map.value).bindPopup('Campsite Location').openPopup()
-};
 
 function goToBooking() {
   const user = localStorage.getItem("user");
@@ -173,7 +144,16 @@ const sendMessage = async () => {
     <!-- Map Section -->
     <div class="bg-white rounded-xl shadow p-6 mb-8">
       <h3 class="text-lg font-semibold text-green-700 mb-2">Map</h3>
-      <div id="map" class="campsite-map"></div>
+      <GMapMap
+      v-if="campsite.location && campsite.location.latitude && campsite.location.longitude"
+      :center="{ lat: campsite.location.latitude, lng: campsite.location.longitude }"
+      :zoom="13"
+      style="width: 100%; height: 320px; border-radius: 12px; z-index: 1;"
+    >
+      <GMapMarker
+        :position="{ lat: campsite.location.latitude, lng: campsite.location.longitude }"
+      />
+    </GMapMap>
     </div>
 
     <!-- Booking & Messaging Section -->

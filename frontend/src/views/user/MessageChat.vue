@@ -84,14 +84,14 @@ const sendMessage = async () => {
         <div
           v-for="message in messages"
           :key="message.id"
-          class="message mb-4"
+          class="message mb-4 "
         >
           <p
             :class="{
               'sent': message.senderId === user.id,
               'received': message.senderId !== user.id
             }"
-            class="p-3 rounded-lg max-w-xs"
+            class="p-3 rounded-lg max-w-xs "
           >
             {{ message.content }}
           </p>

@@ -434,17 +434,31 @@ app.get('/bookings/check-duplicate', async (req, res) => {
 });
 
 // Cancel a booking
-app.delete('/bookings/:id', async (req, res) => {
+app.patch('/bookings/:id/cancel', async (req, res) => {
   const { id } = req.params;
-
   try {
-    await prisma.booking.delete({
+    const booking = await prisma.booking.update({
       where: { id: parseInt(id) },
+      data: { status: 'CANCELLED' },
     });
-    res.json({ success: true, message: 'Booking canceled successfully.' });
+    res.json({ success: true, booking });
   } catch (err) {
-    console.error('Error canceling booking:', err);
     res.status(500).json({ success: false, error: 'Failed to cancel booking.' });
+  }
+});
+
+
+// Approve a booking
+app.patch('/bookings/:id/approve', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const booking = await prisma.booking.update({
+      where: { id: parseInt(id) },
+      data: { status: 'CONFIRMED' },
+    });
+    res.json({ success: true, booking });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to approve booking.' });
   }
 });
 

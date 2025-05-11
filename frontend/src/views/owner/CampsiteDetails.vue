@@ -2,7 +2,8 @@
 import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import L from 'leaflet'; // Import Leaflet for map functionality
+import { GMapMap, GMapMarker } from '@fawmi/vue-google-maps';
+
 
 const route = useRoute();
 const router = useRouter();
@@ -115,190 +116,128 @@ const toggleEditMode = () => {
 </script>
 
 <template>
-  <div v-if="campsite" class="campsite-details">
-    <h1>{{ campsite.name }}</h1>
+  <div v-if="campsite" class="min-h-screen bg-green-50 py-10 px-4 flex justify-center">
 
-    <h3>Map</h3>
-    <div id="map" style="height: 400px; border-radius: 8px;"></div>
-    <form v-if="editing" @submit.prevent="updateCampsite">
-      <!-- Editable Fields -->
-      <label for="name">Name</label>
-      <input v-model="campsite.name" type="text" id="name" required />
-
-      <label for="description">Description</label>
-      <textarea v-model="campsite.description" id="description" required></textarea>
-
-      <label for="price">Price</label>
-      <input v-model="campsite.price" type="number" id="price" required />
-
-      <label for="location-city">City</label>
-      <input v-model="campsite.location.city" type="text" id="location-city" required />
-
-      <label for="location-country">Country</label>
-      <input v-model="campsite.location.country" type="text" id="location-country" required />
-
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-10 space-y-10">
       
-
-      <!-- Edit Images -->
-      <h3>Edit Images</h3>
-      <div class="gallery">
-        <div v-for="image in campsite.image" :key="image.id" class="image-item">
-          <img :src="`http://localhost:3000/${image.url}`" alt="Campsite Image" />
-          <button type="button" @click="removeImage(image.id)">Remove</button>
+      <!-- Image Gallery at Top -->
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Gallery</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <img
+            v-for="image in campsite.image"
+            :key="image.id"
+            :src="`http://localhost:3000/${image.url}`"
+            alt="Campsite Image"
+            class="rounded-xl w-full h-64 object-cover shadow"
+          />
         </div>
       </div>
-      <label for="new-images">Add New Images</label>
-      <input type="file" id="new-images" multiple @change="handleFileChange" />
 
-      <!-- Buttons -->
-      <div class="button-group">
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Updating...' : 'Save Changes' }}
+      <!-- Header -->
+      <div class="flex justify-between items-center">
+        <h1 class="text-4xl font-bold text-green-800">{{ campsite.name }}</h1>
+        <button 
+          v-if="!editing" 
+          @click="toggleEditMode" 
+          class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold transition"
+        >
+          Edit
         </button>
-        <button type="button" @click="toggleEditMode" class="cancel-btn">
-          Cancel
-        </button>
-      </div>
-    </form>
-
-    <div v-else>
-      <!-- Read-Only Details -->
-      <p><strong>Description:</strong> {{ campsite.description }}</p>
-      <p><strong>Price:</strong> ${{ campsite.price }}/night</p>
-      <p><strong>Location:</strong> {{ campsite.location?.city || 'Unknown City' }}, {{ campsite.location?.country || 'Unknown Country' }}</p>
-      <h3>Amenities</h3>
-      <ul>
-        <li v-for="amenity in campsite.amenities" :key="amenity.id">{{ amenity.name }}</li>
-      </ul>
-
-      <h3>Images</h3>
-      <div class="gallery">
-        <img
-          v-for="image in campsite.image"
-          :key="image.id"
-          :src="`http://localhost:3000/${image.url}`"
-          alt="Campsite Image"
-        />
       </div>
 
-      <!-- Edit Button -->
-      <div class="button-group">
-        <button @click="toggleEditMode" class="edit-btn">Edit</button>
+      <!-- Map Section -->
+      <<div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">Location</h2>
+        <GMapMap
+          v-if="campsite.location && campsite.location.latitude && campsite.location.longitude"
+          :center="{ lat: campsite.location.latitude, lng: campsite.location.longitude }"
+          :zoom="13"
+          style="width: 100%; height: 400px; border-radius: 16px; z-index: 1;"
+        >
+          <GMapMarker
+            :position="{ lat: campsite.location.latitude, lng: campsite.location.longitude }"
+          />
+        </GMapMap>
       </div>
+
+      <!-- Form Section -->
+      <form v-if="editing" @submit.prevent="updateCampsite" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input v-model="campsite.name" type="text" required
+              class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Price</label>
+            <input v-model="campsite.price" type="number" required
+              class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">City</label>
+            <input v-model="campsite.location.city" type="text" required
+              class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Country</label>
+            <input v-model="campsite.location.country" type="text" required
+              class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea v-model="campsite.description" rows="4" required
+            class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2"></textarea>
+        </div>
+
+        <!-- Image Management -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700">Manage Images</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-3">
+            <div v-for="image in campsite.image" :key="image.id" class="relative group">
+              <img :src="`http://localhost:3000/${image.url}`" alt="Campsite Image"
+                class="rounded-lg object-cover w-full h-32">
+              <button type="button"
+                @click="removeImage(image.id)"
+                class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center hover:bg-red-700"
+              >✕</button>
+            </div>
+          </div>
+          <input type="file" multiple @change="handleFileChange"
+            class="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700" />
+        </div>
+
+        <div class="flex justify-end gap-4">
+          <button type="submit" :disabled="loading"
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg transition">
+            {{ loading ? 'Updating...' : 'Save Changes' }}
+          </button>
+          <button type="button" @click="toggleEditMode"
+            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-6 py-2 rounded-lg transition">
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <!-- View-Only Details -->
+      <div v-else class="space-y-4">
+        <p class="text-gray-700"><strong>Description:</strong> {{ campsite.description }}</p>
+        <p class="text-gray-700"><strong>Price:</strong> ${{ campsite.price }}/night</p>
+        <p class="text-gray-700"><strong>Location:</strong> {{ campsite.location?.city }}, {{ campsite.location?.country }}</p>
+
+        <div>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Amenities</h3>
+          <ul class="list-disc pl-5 space-y-1 text-gray-600">
+            <li v-for="amenity in campsite.amenities" :key="amenity.id">{{ amenity.name }}</li>
+          </ul>
+        </div>
+      </div>
+
     </div>
   </div>
-
-  <div v-else>
-    <p>Loading campsite...</p>
-  </div>
 </template>
-
-<style scoped>
-.campsite-details {
-  max-width: 600px;
-  margin: auto;
-  padding: 2rem;
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-form label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-}
-
-form input,
-form textarea {
-  width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-button {
-  padding: 0.8rem 1.5rem;
-  background-color: #2e7d32;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-button:disabled {
-  background-color: #a5d6a7;
-  cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
-  background-color: #1b5e20;
-}
-
-.cancel-btn {
-  background-color: #d32f2f;
-  margin-left: 1rem;
-}
-
-.cancel-btn:hover {
-  background-color: #b71c1c;
-}
-
-.edit-btn {
-  background-color: #4caf50;
-}
-
-.edit-btn:hover {
-  background-color: #388e3c;
-}
-
-.button-group {
-  display: flex;
-  justify-content: flex-start;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.gallery img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.image-item {
-  position: relative;
-}
-
-.image-item button {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background-color: #d32f2f;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.image-item button:hover {
-  background-color: #b71c1c;
-}
-#map {
-  height: 400px;
-  width: 100%;
-  border-radius: 8px;
-}
-</style>

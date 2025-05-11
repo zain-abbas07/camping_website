@@ -63,7 +63,7 @@ onMounted(async () => {
   userLoading.value = false // Mark user loading as complete
 })
 
-watch([minPrice, maxPrice, location, selectedAmenities], fetchCampsites)
+
 
 const viewDetails = (id) => {
   router.push(`/campsite/${id}`)
