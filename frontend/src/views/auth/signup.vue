@@ -25,7 +25,8 @@ const handleSignup = async () => {
     alert('Signup successful! Please login.');
     router.push('/login');
   } catch (err) {
-    alert('Signup failed: ' + err.response.data.error);
+    const msg = err.response?.data?.error || "Signup failed. Please try again.";
+    alert(msg);
   }
 };
 </script>

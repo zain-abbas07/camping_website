@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
@@ -14,6 +14,25 @@ const newImages = ref([]); // Tracks newly uploaded images
 const imagesToRemove = ref([]); // Tracks images to be removed
 const map = ref(null); // Leaflet map instance
 
+
+
+// Carousel logic
+const currentImageIndex = ref(0);
+const showPrevImage = () => {
+  if (campsite.value?.image?.length) {
+    currentImageIndex.value = (currentImageIndex.value - 1 + campsite.value.image.length) % campsite.value.image.length;
+  }
+};
+const showNextImage = () => {
+  if (campsite.value?.image?.length) {
+    currentImageIndex.value = (currentImageIndex.value + 1) % campsite.value.image.length;
+  }
+};
+watch(() => campsite.value?.image?.length, () => {
+  currentImageIndex.value = 0;
+});
+
+
 onMounted(async () => {
   try {
     const id = route.params.id;
@@ -25,7 +44,7 @@ onMounted(async () => {
     if (campsite.value.location && campsite.value.location.latitude && campsite.value.location.longitude) {
       await nextTick(); // Ensure the DOM is updated
       const mapElement = document.getElementById('map');
-      console.log('Map element:', mapElement);
+      
       if (!mapElement) {
         console.error('Map container not found in the DOM.');
         return;
@@ -137,13 +156,7 @@ const toggleEditMode = () => {
       <!-- Header -->
       <div class="flex justify-between items-center">
         <h1 class="text-4xl font-bold text-green-800">{{ campsite.name }}</h1>
-        <button 
-          v-if="!editing" 
-          @click="toggleEditMode" 
-          class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold transition"
-        >
-          Edit
-        </button>
+        
       </div>
 
       <!-- Map Section -->
@@ -160,7 +173,7 @@ const toggleEditMode = () => {
           />
         </GMapMap>
       </div>
-
+      
       <!-- Form Section -->
       <form v-if="editing" @submit.prevent="updateCampsite" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -211,7 +224,6 @@ const toggleEditMode = () => {
           <input type="file" multiple @change="handleFileChange"
             class="mt-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700" />
         </div>
-
         <div class="flex justify-end gap-4">
           <button type="submit" :disabled="loading"
             class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg transition">
@@ -223,13 +235,11 @@ const toggleEditMode = () => {
           </button>
         </div>
       </form>
-
       <!-- View-Only Details -->
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-4 px-6">
         <p class="text-gray-700"><strong>Description:</strong> {{ campsite.description }}</p>
         <p class="text-gray-700"><strong>Price:</strong> ${{ campsite.price }}/night</p>
         <p class="text-gray-700"><strong>Location:</strong> {{ campsite.location?.city }}, {{ campsite.location?.country }}</p>
-
         <div>
           <h3 class="text-lg font-semibold text-gray-700 mb-2">Amenities</h3>
           <ul class="list-disc pl-5 space-y-1 text-gray-600">
@@ -237,6 +247,13 @@ const toggleEditMode = () => {
           </ul>
         </div>
       </div>
+      <button 
+          v-if="!editing" 
+          @click="toggleEditMode" 
+          class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-semibold transition"
+        >
+          Edit
+        </button>
 
     </div>
   </div>

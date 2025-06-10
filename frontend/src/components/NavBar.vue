@@ -24,7 +24,7 @@ function goToMessages() {
 
 <template>
   
-  <nav class="fixed top-0 left-0 w-full bg-white shadow-md z-50">
+  <nav class="navbar fixed top-0 left-0 w-full bg-white shadow-md z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
         <!-- Left side - Logo/Brand -->
@@ -168,114 +168,12 @@ function goToMessages() {
 
 <style scoped>
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: #f8f8f8;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  background: linear-gradient(90deg, #43e97b 50%, #38f9d7 100%);
+  padding: 0.5rem 1rem;
+  
 }
 
 .navbar a {
-  background: none;
-  border: none;
-  color: #333;
-  cursor: pointer;
-  font-size: 1rem;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.navbar a:hover {
-  color: #2e7d32; /* Green text color on hover */
-  background-color: transparent; /* No background color */
-  text-decoration: none; /* Prevent underline */
-}
-
-.navbar a.router-link-active {
-  font-weight: bold;
-  color: #2e7d32; /* Active link color */
-}
-
-.navbar button {
-  background: none;
-  border: none;
-  color: #333;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.navbar button:hover {
-  text-decoration: underline;
-  color: #2e7d32; /* Green text color on hover */
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Optional: Add a subtle overlay */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-}
-
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.modal-content h3 {
-  color: #2e7d32; /* Green heading color */
-}
-
-.modal-content p {
-  color: #4b5563; /* Gray text color */
-}
-
-.modal-content button {
-  margin: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  text-decoration: none; /* Prevent underline */
-}
-
-.modal-content button:first-child {
-  background-color: white;
-  border: 1px solid #ccc;
-  color: #333;
-}
-
-.modal-content button:first-child:hover {
-  background-color: #f5f5f5;
-}
-
-.modal-content button:last-child {
-  background-color: #2e7d32;
-  color: white;
-  border: none;
-}
-
-.modal-content button:last-child:hover {
-  background-color: #1b5e20;
-}
-
-.modal-content button:disabled {
-  background-color: #a5d6a7;
-  cursor: not-allowed;
+    color: #333;
 }
 </style>

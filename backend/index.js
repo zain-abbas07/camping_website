@@ -100,6 +100,8 @@ app.post('/campsites', upload.array('images'), async (req, res) => {
   } catch (err) {
     console.error('Error creating campsite:', err);
     res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(400).json({ success: false, error: 'Unable to verify address. Please enter a valid address.' });
+  
   }
 });
 
@@ -260,6 +262,11 @@ app.patch('/campsites/:id', upload.array('newImages'), async (req, res) => {
 app.post("/signup", async (req, res) => {
   const { name, email, username, password, phoneNumber, role } = req.body;
 
+  // Phone number validation: allow empty/null or only digits, 7-15 chars
+  if (phoneNumber && !/^\d{7,15}$/.test(phoneNumber)) {
+    return res.status(400).json({ success: false, error: "Invalid phone number. Please enter digits only." });
+  }
+
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -283,11 +290,21 @@ app.post("/signup", async (req, res) => {
     console.error("Signup error:", err);
 
     if (err.code === 'P2002') {
-      const field = err.meta?.target?.join(', ') || 'field';
-      return res.status(400).json({ success: false, error: `${field} already in use` });
+      // Prisma returns the field name in err.meta.target
+      let field = err.meta?.target;
+      if (Array.isArray(field)) field = field[0];
+      if (field === 'User_email_key' || field === 'email') {
+        return res.status(400).json({ success: false, error: 'Email already in use' });
+      }
+      if (field === 'User_username_key' || field === 'username') {
+        return res.status(400).json({ success: false, error: 'Username already in use' });
+      }
+      if (field === 'User_phoneNumber_key' || field === 'phoneNumber') {
+        return res.status(400).json({ success: false, error: 'Phone number already in use' });
+      }
+      return res.status(400).json({ success: false, error: 'Field already in use' });
     }
-
-    res.status(500).json({ success: false, error: "Internal server error", message: err.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
@@ -508,7 +525,7 @@ app.get("/users/:id", async (req, res) => {
 // Update Name, Email, Phone Number, and Username
 app.put('/users/:id', async (req, res) => {
   const { id } = req.params;
-  const { email, username, phoneNumber, currentValue } = req.body;
+  const {name, email, username, phoneNumber } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -519,26 +536,37 @@ app.put('/users/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // Verify current value
-    if (email && user.email !== currentValue) {
-      return res.status(400).json({ success: false, error: 'Current email is incorrect.' });
-    }
-    if (username && user.username !== currentValue) {
-      return res.status(400).json({ success: false, error: 'Current username is incorrect.' });
-    }
-    if (phoneNumber && user.phoneNumber !== currentValue) {
-      return res.status(400).json({ success: false, error: 'Current phone number is incorrect.' });
-    }
+    
 
     // Update the field
     const updated = await prisma.user.update({
       where: { id: parseInt(id) },
-      data: { email, username, phoneNumber },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(username && { username }),
+        ...(phoneNumber && { phoneNumber }),
+      },
     });
 
     res.json({ success: true, user: updated });
   } catch (err) {
     console.error(err);
+    // Handle unique constraint errors as before
+    if (err.code === 'P2002') {
+      let field = err.meta?.target;
+      if (Array.isArray(field)) field = field[0];
+      if (field === 'User_email_key' || field === 'email') {
+        return res.status(400).json({ success: false, error: 'Email already in use' });
+      }
+      if (field === 'User_username_key' || field === 'username') {
+        return res.status(400).json({ success: false, error: 'Username already in use' });
+      }
+      if (field === 'User_phoneNumber_key' || field === 'phoneNumber') {
+        return res.status(400).json({ success: false, error: 'Phone number already in use' });
+      }
+      return res.status(400).json({ success: false, error: 'Field already in use' });
+    }
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

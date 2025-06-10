@@ -44,25 +44,7 @@ const closeModal = () => {
   showModal.value = false;
 };
 
-const submitBooking = async () => {
-  try {
-    loading.value = true;
-    const duplicateCheck = await axios.get('http://localhost:3000/bookings/check-duplicate', {
-      params: {
-        userId: auth.currentUser.id,
-        campsiteId: campsite.value.id,
-        checkIn: checkIn.value,
-        checkOut: checkOut.value,
-      },
-    });
-
-    if (duplicateCheck.data.isDuplicate) {
-      alert('You already have a booking for this campsite during the selected dates.');
-      closeModal();
-      return;
-    }
-
-
+const handleFormSubmit = async () => {
   if (!checkIn.value || !checkOut.value) {
     return alert('Please select both check-in and check-out dates.');
   }
@@ -83,7 +65,34 @@ const submitBooking = async () => {
     return router.push('/login');
   }
 
-  
+  try {
+    loading.value = true;
+    const duplicateCheck = await axios.get('http://localhost:3000/bookings/check-duplicate', {
+      params: {
+        userId: auth.currentUser.id,
+        campsiteId: campsite.value.id,
+        checkIn: checkIn.value,
+        checkOut: checkOut.value,
+      },
+    });
+
+    if (duplicateCheck.data.isDuplicate) {
+      alert('You already have a booking for this campsite during the selected dates.');
+      return;
+    }
+
+    // All checks passed, show the modal
+    showModal.value = true;
+  } catch (err) {
+    alert('Failed to check booking. Please try again.');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const confirmBooking = async () => {
+  try {
+    loading.value = true;
     await axios.post('http://localhost:3000/bookings', {
       userId: auth.currentUser.id,
       campsiteId: campsite.value.id,
@@ -91,18 +100,15 @@ const submitBooking = async () => {
       checkOut: checkOut.value,
       totalPrice: parseFloat(totalPrice.value),
     });
-
     alert('Booking successful!');
     router.push('/bookings');
   } catch (err) {
-    console.error(err);
     alert('Booking failed. Please try again.');
-  }finally {
+  } finally {
     loading.value = false;
     closeModal();
   }
 };
-
 onMounted(fetchCampsite);
 </script>
 
@@ -128,7 +134,7 @@ onMounted(fetchCampsite);
           </p>
         </div>
       </div>
-      <form @submit.prevent="openModal" class="space-y-4">
+      <form @submit.prevent="handleFormSubmit" class="space-y-4">
         <div class="flex flex-col md:flex-row gap-4">
           <div class="flex-1">
             <label class="block text-gray-700 mb-1">Check-in</label>
@@ -164,7 +170,7 @@ onMounted(fetchCampsite);
             Cancel
           </button>
           <button
-            @click="submitBooking"
+            @click="confirmBooking"
             class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300"
             :disabled="loading"
           >

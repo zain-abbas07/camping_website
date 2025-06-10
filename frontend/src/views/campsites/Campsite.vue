@@ -11,6 +11,7 @@ const map = ref(null)
 const messages = ref([]); // Stores messages between the user and the owner
 const newMessage = ref(''); // Tracks the new message content
 const user = JSON.parse(localStorage.getItem('user')); // Get the logged-in user
+const currentImageIndex = ref(0)
 
 onMounted(async () => {
   try {
@@ -83,7 +84,16 @@ const sendMessage = async () => {
   }
 };
 
-
+function prevImage() {
+  if (currentImageIndex.value > 0) currentImageIndex.value--
+}
+function nextImage() {
+  if (campsite.value.image && currentImageIndex.value < campsite.value.image.length - 1)
+    currentImageIndex.value++
+}
+function goToImage(idx) {
+  currentImageIndex.value = idx
+}
 </script>
 
 <template>
@@ -104,15 +114,38 @@ const sendMessage = async () => {
     </div>
 
     <!-- Image Gallery -->
-    <div class="gallery-grid mb-8">
+    <div class="gallery-carousel mb-8">
+    <div class="carousel-container">
+      <button
+        class="carousel-btn left"
+        @click="prevImage"
+        :disabled="currentImageIndex === 0"
+        aria-label="Previous image"
+      >
+        ‹
+      </button>
       <img
-        v-for="image in campsite.image"
-        :key="image.id"
-        :src="`http://localhost:3000/${image.url}`"
+        v-if="campsite.image && campsite.image.length"
+        :src="`http://localhost:3000/${campsite.image[currentImageIndex].url}`"
         alt="Campsite Image"
-        class="gallery-img"
+        class="carousel-img"
       />
+      <button
+        class="carousel-btn right"
+        @click="nextImage"
+        :disabled="currentImageIndex === (campsite.image.length - 1)"
+        aria-label="Next image"
+      >
+        ›
+      </button>
     </div>
+    <div class="carousel-indicator">
+      <span v-for="(img, idx) in campsite.image" :key="img.id"
+        :class="['dot', { active: idx === currentImageIndex }]"
+        @click="goToImage(idx)"
+      ></span>
+    </div>
+  </div>
 
     <!-- Description & Amenities -->
     <div class="bg-white rounded-xl shadow p-6 mb-8">
@@ -281,4 +314,65 @@ const sendMessage = async () => {
 .message-input button:hover {
   background-color: #1b5e20;
 }
+
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 4/3; /* Makes the container landscape, works in modern browsers */
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e0e0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.carousel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* This will crop the image to fill the container */
+  display: block;
+  margin: auto;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.8);
+  border: none;
+  font-size: 2.5rem;
+  color: #2e7d32;
+  padding: 0 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s;
+}
+.carousel-btn.left { left: 8px; }
+.carousel-btn.right { right: 8px; }
+.carousel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.carousel-indicator {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c8e6c9;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dot.active {
+  background: #2e7d32;
+}
+
 </style>

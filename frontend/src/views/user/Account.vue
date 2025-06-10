@@ -88,12 +88,22 @@ const confirmUpdate = () => {
 const updateField = async () => {
   try {
     loading.value = true;
-    await axios.put(`http://localhost:3000/users/${userId}`, {
-      [editField.value]: newValue.value,
-    });
-    form.value[editField.value] = newValue.value;
+    if (editField.value === 'password') {
+      // Send to the password endpoint with both current and new password
+      await axios.put(`http://localhost:3000/users/${userId}/password`, {
+        currentPassword: password.value,
+        newPassword: newValue.value,
+      });
+      alert('Password updated successfully!');
+    } else {
+      // For other fields, update as before
+      await axios.put(`http://localhost:3000/users/${userId}`, {
+        [editField.value]: newValue.value,
+      });
+      form.value[editField.value] = newValue.value;
+      alert(`${editField.value} updated successfully!`);
+    }
     cancelEdit();
-    alert(`${editField.value} updated successfully!`);
   } catch (err) {
     console.error(`Failed to update ${editField.value}`, err);
     showError(err.response?.data?.error || `Failed to update ${editField.value}.`);
@@ -112,7 +122,10 @@ const deleteAccount = async () => {
     await axios.delete(`http://localhost:3000/users/${userId}`);
     alert('Account deleted successfully.');
     localStorage.removeItem('user');
-    router.push('/signup');
+    if (typeof auth !== 'undefined' && auth.logoutUser) {
+      auth.logoutUser();
+    }
+    router.push('/signup').then(() => window.location.reload());
   } catch (err) {
     console.error('Failed to delete account', err);
     showError('Incorrect password or failed to delete account. Please try again.');
@@ -207,7 +220,7 @@ const deleteAccount = async () => {
           v-model="password"
           type="password"
           placeholder="Enter your password"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg "
         />
         <div class="flex justify-end gap-2 mt-4">
           <button
@@ -236,7 +249,7 @@ const deleteAccount = async () => {
           :id="editField"
           type="text"
           required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mb-4"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg "
         />
         <label class="block mb-2" :for="'confirm' + editField">Confirm New {{ editField }}</label>
         <input
@@ -244,7 +257,7 @@ const deleteAccount = async () => {
           :id="'confirm' + editField"
           type="text"
           required
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 mb-4"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg "
         />
         <div class="flex justify-end gap-2">
           <button
@@ -269,7 +282,7 @@ const deleteAccount = async () => {
           v-model="password"
           type="password"
           placeholder="Enter your password"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg "
         />
         <div class="flex justify-end gap-2 mt-4">
           <button

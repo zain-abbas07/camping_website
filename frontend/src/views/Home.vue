@@ -172,6 +172,10 @@ const viewDetails = (id) => {
       <div v-if="loading" class="text-center py-12">
           <p class="text-lg text-gray-600">Loading amazing camping spots...</p>
         </div>
+        <div v-else>
+  <div v-if="campsites.length === 0" class="text-center text-gray-500 py-8 text-lg">
+    No campsite found matching the criteria.
+  </div>
         <div v-else-if="error" class="text-center text-red-500 py-12">
           {{ error }}
         </div>
@@ -234,7 +238,8 @@ const viewDetails = (id) => {
       </div>
     </div>
   </div>
-      </div>
+</div>
+</div>
     
   
 </template>

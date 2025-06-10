@@ -96,7 +96,8 @@ const submitListing = async () => {
     router.push('/owner/dashboard');
   } catch (err) {
     console.error('Error adding campsite:', err);
-    alert('Failed to add campsite. Please try again.');
+    alert(err.response?.data?.error || 'Failed to create campsite.');
+
   } finally {
     loading.value = false;
   }

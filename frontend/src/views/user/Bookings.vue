@@ -42,6 +42,13 @@
             <span class="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
               Upcoming
             </span>
+            <button
+              v-if="booking.status !== 'CANCELLED'"
+              @click.stop="openCancelModal(booking)"
+              class="cancel-btn mt-2"
+            >
+              Cancel Booking
+            </button>
           </div>
         </div>
       </div>
@@ -90,6 +97,22 @@
           </div>
         </div>
       </div>
+      <!-- Add this at the end of your template -->
+<div v-if="showCancelModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
+  <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+    <h3 class="text-lg font-semibold mb-4 text-red-700">Cancel Booking</h3>
+    <p class="mb-6">
+      Are you sure you want to cancel your booking for
+      <strong>{{ bookingToCancel?.campsite?.name }}</strong>?
+    </p>
+    <div class="flex justify-end gap-3">
+      <button @click="closeCancelModal" class="cancel-btn">No, Keep</button>
+      <button @click="confirmCancelBooking" :disabled="loading" class="confirm-btn">
+        {{ loading ? 'Cancelling...' : 'Yes, Cancel' }}
+      </button>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 </template>
@@ -99,6 +122,9 @@ import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from "vue-router"
 
+const showCancelModal = ref(false);
+const bookingToCancel = ref(null);
+const loading = ref(false);
 const router = useRouter()
 const bookings = ref([])
 
@@ -127,7 +153,9 @@ const formatDate = (dateString) => {
 
 // Computed properties for active and expired bookings
 const activeBookings = computed(() =>
-  bookings.value.filter(b => new Date(b.checkOut) >= new Date())
+  bookings.value.filter(
+    b => new Date(b.checkOut) >= new Date() && b.status !== 'CANCELLED'
+  )
 )
 const expiredBookings = computed(() =>
   bookings.value.filter(b => new Date(b.checkOut) < new Date())
@@ -135,4 +163,53 @@ const expiredBookings = computed(() =>
 function goToCampsite(campsiteId) {
   router.push(`/campsite/${campsiteId}`)
 }
+
+function openCancelModal(booking) {
+  bookingToCancel.value = booking;
+  showCancelModal.value = true;
+}
+function closeCancelModal() {
+  showCancelModal.value = false;
+  bookingToCancel.value = null;
+}
+async function confirmCancelBooking() {
+  if (!bookingToCancel.value) return;
+  try {
+    loading.value = true;
+    await axios.patch(`http://localhost:3000/bookings/${bookingToCancel.value.id}/cancel`);
+    bookingToCancel.value.status = 'CANCELLED';
+    closeCancelModal();
+    // Optionally, reload bookings from backend here
+  } catch (err) {
+    alert('Failed to cancel booking.');
+  } finally {
+    loading.value = false;
+  }
+}
 </script>
+<style scoped>
+.cancel-btn {
+  background: #fff;
+  color: #d32f2f;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-weight: bold;
+  padding: 0.5rem 1.2rem;
+  transition: background 0.2s;
+}
+.cancel-btn:hover {
+  background: #f5f5f5;
+}
+.confirm-btn {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  padding: 0.5rem 1.2rem;
+  transition: background 0.2s;
+}
+.confirm-btn:hover:not(:disabled) {
+  background: #b71c1c;
+}
+</style>
